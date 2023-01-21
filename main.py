@@ -24,7 +24,6 @@ nuc_others = {'A':'CGU',
               'U':'ACG',
               'G':'ACU'}
 
-
 nuc_pair_others = {'AU': ['UA', 'CG', 'GC', 'UG', 'GU'],
                    'UA': ['AU', 'CG', 'GC', 'UG', 'GU'],
                    'CG': ['AU', 'UA', 'GC', 'UG', 'GU'],
@@ -38,6 +37,40 @@ nuc_pair_all = ['AU', 'UA', 'CG', 'GC', 'UG', 'GU']
 STAY = 2000
 STOP = 0.01
 MAX_REPEAT =1000
+
+
+class RNAStructure:
+    
+    def __init__(self, seq, score, v, v_list): # v_list: positional NED, v: objective value, socore: used for priority queue
+        self.seq = seq
+        self.score = score
+        self.v = v
+        self.v_list = v_list
+        
+    def __gt__(self, other):
+        return self.score > other.score
+    
+    def __lt__(self, other):
+        return self.score < other.score
+    
+    def __eq__(self, other):
+        return  self.seq == other.seq
+    
+    def __ge__(self, other):
+        return self.score >= other.score
+    
+    def __le__(self, other):
+        return self.score <= other.score
+    
+    def __str__(self):
+        return f"{self.seq}: {self.score: .4f}, {1-self.score: .4f}"
+    
+    def __repr__(self):
+        return f"RNAStructure('{self.seq}', {self.score})" 
+    
+    def __hash__(self):
+        return hash(self.seq)
+    
 
 def init_with_pair(t, pos_pairs, pairs_init):
     rna = list("."*len(t))
@@ -94,39 +127,6 @@ def pairs_match(ss): # find the pairs in a secondary structure, return a diction
         else:
             raise ValueError(f'the value of structure at position: {i} is not right: {s}!')
     return pairs
-
-
-class RNAStructure:
-    
-    def __init__(self, seq, score, v, v_list): # v_list: positional NED, v: objective value, socore: used for priority queue
-        self.seq = seq
-        self.score = score
-        self.v = v
-        self.v_list = v_list
-        
-    def __gt__(self, other):
-        return self.score > other.score
-    
-    def __lt__(self, other):
-        return self.score < other.score
-    
-    def __eq__(self, other):
-        return  self.seq == other.seq
-    
-    def __ge__(self, other):
-        return self.score >= other.score
-    
-    def __le__(self, other):
-        return self.score <= other.score
-    
-    def __str__(self):
-        return f"{self.seq}: {self.score: .4f}, {1-self.score: .4f}"
-    
-    def __repr__(self):
-        return f"RNAStructure('{self.seq}', {self.score})" 
-    
-    def __hash__(self):
-        return hash(self.seq)
 
 
 def mutate_pair(nuc_i, nuc_j, exclude=False):
