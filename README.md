@@ -5,7 +5,7 @@ RNA Design via Structure-Aware Multi-Frontier Ensemble Optimization
 python3 \
 ViennaRNA-2.5.1
 
-## Set Environment Variable
+## Environment Variable
 ``export VIENNAPATH=/path/to/ViennaRNA/lib/python3.9/site-packages``
 
 ## Eterna100 Design
