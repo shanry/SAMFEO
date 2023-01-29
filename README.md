@@ -8,8 +8,16 @@ ViennaRNA-2.5.1
 ## Environment Variable
 ``export VIENNAPATH=/path/to/ViennaRNA/lib/python3.9/site-packages``
 
+## Structured Mutation
+![alt text](figs/sm.png)
+
 ## Eterna100 Design
 ``python main.py --t 1 --k 10 --object pd --path data/eterna/eterna100.txt`` 
 
-## Output
-Design results will be output as a csv file.
+(Design results will be output as a csv file)
+
+![alt text](figs/inter.png)
+
+
+## 16S Design
+![alt text](figs/long_design.png)
