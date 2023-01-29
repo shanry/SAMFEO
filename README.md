@@ -11,7 +11,9 @@ ViennaRNA-2.5.1
 ``export VIENNAPATH=/path/to/ViennaRNA/lib/python3.9/site-packages``
 
 ## Structured Mutation
+<p align="center">
 <img src="figs/sm.png" width="400">
+</p>
 
 ## Eterna100 Design
 ``python main.py --t 1 --k 10 --object pd --path data/eterna/eterna100.txt`` 
