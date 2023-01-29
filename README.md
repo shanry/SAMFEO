@@ -1,6 +1,8 @@
 # SAMFEO
 RNA Design via Structure-Aware Multi-Frontier Ensemble Optimization
-
+<p align="center">
+<img src="figs/structures.png" width="400">
+</p>
 ## Dependency
 python3 \
 ViennaRNA-2.5.1
