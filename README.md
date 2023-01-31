@@ -24,5 +24,5 @@ Diagrams of Structured Mutation. Paired positions are connected by blue dotted l
 <img src="figs/inter.png" width="600">
 
 
-## 16S Designs
+## 16S Design
 ![alt text](figs/long_design.png)
