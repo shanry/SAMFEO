@@ -293,6 +293,8 @@ def samfeo(target, f, steps, k, t=1, check_mfe=True, sm=True, freq_print=10):
                 mfe_list.append(seq_next)
                 if len(ss_list) == 1:
                     umfe = True
+        else:
+            dist = len(target) # set a dummy dist
         if not umfe:
             dist_list.append(dist)
         else:
@@ -373,8 +375,8 @@ if __name__ == "__main__":
     parser.add_argument("--init", type=str, default='cg')
     parser.add_argument("--repeat", type=int, default=1)
     parser.add_argument("--start", type=int, default=0)
-    parser.add_argument("--mfe", action='store_true')
-    parser.add_argument("--sm", action='store_true')
+    parser.add_argument("--nomfe", action='store_true')
+    parser.add_argument("--nosm", action='store_true')
     parser.add_argument("--bp", action='store_true')
     
 
@@ -395,4 +397,4 @@ if __name__ == "__main__":
         seed_np = 2020+(i+args.start)*2021
         np.random.seed(seed_np)
         suffix = f"{i+args.start}"
-        design(args.path, name_input, f_obj, args.step, k=args.k, t=args.t, check_mfe=args.mfe, sm=args.sm)
+        design(args.path, name_input, f_obj, args.step, k=args.k, t=args.t, check_mfe=not args.nomfe, sm=not args.nosm)
