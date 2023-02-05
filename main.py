@@ -339,7 +339,7 @@ def design(path_txt, name, func, num_step, k, t, check_mfe, sm):
             targets.append(line.strip())
     data = []
     cols = ('puzzle_name', 'structure', 'rna', 'objective', 'mfe', 'dist', 'time', 'log', 'k_best', 'mfe_list', 'dist_list')
-    filename = f"{name}_{func.__name__}_t{t}_k{k}_step{num_step}_{name_pair}_{suffix}_{sm}.csv"
+    filename = f"{name}_{func.__name__}_t{t}_k{k}_step{num_step}_{name_pair}_{suffix}_mfe{check_mfe}_sm{sm}_time{int(time.time())}.csv"
     for i, target in enumerate(targets):
         puzzle_name = f"{name}_{i}"
         print(f'target structure {i}, {puzzle_name}:')
