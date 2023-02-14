@@ -23,6 +23,13 @@ Diagrams of Structured Mutation. Paired positions are connected by blue dashed l
 (Design results will be output as a csv file)
 <img src="figs/inter.png" width="600">
 
+## Base pair probabiliy plot
+Blue denotes pairs in the target structure and Red denotes predicted pairs not in the target structure. The darkness of the curves indicates pairing probability. The following figs show the design results for the puzzle "Runner" by NEMO and SAMFEO respectively. We can see that there are some red curves in the plot of NEMO, which means those undesired pairs are more likely to apear in the ensemble of sequence designed by NEMO.
+### NEMO
+<img src="figs/eterna61_nemo.png" width="800">
+
+### SAMFEO
+<img src="figs/eterna61_samfeo.png" width="800">
 
 ## 16S Design
 ![alt text](figs/long_design.png)
