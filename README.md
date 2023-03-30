@@ -23,7 +23,7 @@ Diagrams of Structured Mutation. Paired positions are connected by blue dashed l
 ``--t`` set the sampling temprature(T in the paper). The default value is 1. \
 ``--k`` set the size of frontier(priority queue). The default value is 10. \
 ``--object`` set objective, the value can be ``pd`` or ``ned``, which stand for probability defect and ensemble defect respectively. The default value is ``pd``. \
-``--init``, the sequence initilization method, and the value can be ``cg`` or ``all``, which stand for targeted initilization and random initilization respectively. The default value is ``cg``. \
+``--init`` the sequence initilization method, and the value can be ``cg`` or ``all``, which stand for targeted initilization and random initilization respectively. The default value is ``cg``. \
 ``--nosm`` if used, the structured mutation will be ablated.  \
 ``--nomfe`` if used, "mfe as product" will be ablated, i.e., only the sequence with the best score will be used as the designed sequence.
 
@@ -33,15 +33,15 @@ Diagrams of Structured Mutation. Paired positions are connected by blue dashed l
 ### Output format
 The design results will be output as a csv file with the following columns.
 
-``structure``: the input puzzle(target secondary structure) \
-``objective``: the best(lowest) objective value achived during optimization. \
-``rna``: the sequence with the best objective during optimization \
+``structure``: the input puzzle (target secondary structure). \
+``objective``: the best (lowest) objective value achived during optimization. \
+``rna``: the sequence with the best objective during optimization. \
 ``mfe``: the MFE structure of ``rna``, given by ViennaRNA folding engine. \
 ``dist``: the distance between ``mfe`` and ``structure``. \
 ``dist_list``: a list containing the distances between the target structure and the MFE structure of every sequence during optimization. In particular, ``-2`` represent that not only the sequence is an MFE solution, but its MFE structure is unique. In other words, ``-2`` means the sequence is a unique MFE solution. The order of the list is based on the time when each sequence is found. \
 ``mfe_list``: a list containing all the MFE solutions found. The order of the list is based on the time when each MFE solution is detected. Note that by combining``mfe_list`` and ``dist_list``, a list of unique MFE solutions can be yielded. (Take the MFE solutions with a distance value of ``-2``).  \
 ``k_best``: the priority queue at the final iteration. \
-``log``: the objective values at each iteration.
+``log``: the objective values at each iteration. \
 ``time``: the total time used to design the input puzzle ``structure``.
 ### Ensemble metrics
 <img src="figs/inter.png" width="600">
