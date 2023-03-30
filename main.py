@@ -370,7 +370,7 @@ if __name__ == "__main__":
     parser.add_argument("--object", '-o', type=str, default='pd')
     parser.add_argument("--k", type=int, default=10)
     parser.add_argument("--t", type=float, default=1)
-    parser.add_argument("--step", type=int, default=5000)
+    parser.add_argument("--step", type=int, default=5000) 
     parser.add_argument("--name", type=str, default='')
     parser.add_argument("--init", type=str, default='cg')
     parser.add_argument("--repeat", type=int, default=1)
