@@ -43,6 +43,10 @@ The design results will be output as a csv file with the following columns.
 ``k_best``: the priority queue at the final iteration. \
 ``log``: the objective values at each iteration. \
 ``time``: the total time used to design the input puzzle ``structure``.
+
+## Solved puzzles
+see [data/results/eterna_samfeo.csv](data/results/eterna_samfeo.csv)
+
 ### Ensemble metrics
 <img src="figs/inter.png" width="600">
 
