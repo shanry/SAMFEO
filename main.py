@@ -378,6 +378,7 @@ if __name__ == "__main__":
     parser.add_argument("--nomfe", action='store_true')
     parser.add_argument("--nosm", action='store_true')
     parser.add_argument("--bp", action='store_true')
+    parser.add_argument("--online", action='store_true')
     
 
     args = parser.parse_args()
@@ -392,6 +393,27 @@ if __name__ == "__main__":
         f_obj = position_ed_pd_mfe
     else:
         raise ValueError('the objective in not correct!')
+    
+    if args.online:
+        seed_np = 2020
+        for line in sys.stdin:
+            target = line.strip()
+            print(target)
+            start_time = time.time()
+            k_best, log, mfe_list, dist_list = samfeo(target, f_obj, args.step, k=args.k, t=args.t, check_mfe=not args.nomfe, sm=not args.nosm) # rna and ensemble defect
+            finish_time = time.time()
+            rna_best = max(k_best)
+            seq = rna_best.seq
+            obj = 1 - rna_best.score
+            print('RNA sequence: ')
+            print(seq)
+            print('ensemble objective: ', obj)
+            print(target)
+            ss_mfe = mfe(seq)[0]
+            dist = struct_dist(target, ss_mfe)
+            print(ss_mfe)
+            print(f'structure distance: {dist}')
+        exit(0)
       
     for i in range(args.repeat):
         seed_np = 2020+(i+args.start)*2021
