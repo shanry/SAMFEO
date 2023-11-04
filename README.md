@@ -1,8 +1,5 @@
 # SAMFEO
 RNA Design via Structure-Aware Multi-Frontier Ensemble Optimization
-<p align="center">
-<img src="figs/structure.png" width="480">
-</p>
 
 ## Dependency
 python3 \
