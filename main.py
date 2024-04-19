@@ -1,6 +1,7 @@
 import os
 import sys
 import time
+import json
 import heapq
 import argparse
 
@@ -40,37 +41,37 @@ MAX_REPEAT =1000
 
 
 class RNAStructure:
-    
+
     def __init__(self, seq, score, v, v_list): # v_list: positional NED, v: objective value, socore: used for priority queue
         self.seq = seq
         self.score = score
         self.v = v
         self.v_list = v_list
-        
+
     def __gt__(self, other):
         return self.score > other.score
-    
+
     def __lt__(self, other):
         return self.score < other.score
-    
+
     def __eq__(self, other):
         return  self.seq == other.seq
-    
+
     def __ge__(self, other):
         return self.score >= other.score
-    
+
     def __le__(self, other):
         return self.score <= other.score
-    
+
     def __str__(self):
         return f"{self.seq}: {self.score: .4f}, {1-self.score: .4f}"
-    
+
     def __repr__(self):
-        return f"RNAStructure('{self.seq}', {self.score})" 
-    
+        return f"RNAStructure('{self.seq}', {self.score})"
+
     def __hash__(self):
         return hash(self.seq)
-    
+
 
 def init_with_pair(t, pos_pairs, pairs_init):
     rna = list("."*len(t))
@@ -99,7 +100,7 @@ def init_k(target, pos_pairs, k):
     print(f'pair_pool: {pair_pool}')
     init_0 = init_with_pair(target, pos_pairs, pair_pool)
     p_list = [init_0]
-    # if too few pairs then use 'cggu', however this may never happen 
+    # if too few pairs then use 'cggu', however this may never happen
     if k > len(pair_pool)**(len(pos_pairs)/2) and len(pair_pool)<4:
         pair_pool = name2pair['cggu']
     # the max number of intial sequences is: len(pair_pool)**(len(pos_pairs)/2)
@@ -152,7 +153,7 @@ def mutate_tradition(seq, pairs, v, v_list, T, pairs_dg=None):
     else:
         c = np.random.choice(list(nuc_others[seq[index]]))
         assert c != seq[index]
-        seq_next[index] = c 
+        seq_next[index] = c
     return "".join(seq_next)
 
 # structured mutation
@@ -162,7 +163,7 @@ def mutate_structured(seq, pairs, v, v_list, T):
     index= np.random.choice(list(range(len(seq))), p=probs)
     pairs_mt = []
     unpairs_mt = []
-    
+
     if index in pairs:
         i = min(index, pairs[index])
         j = max(index, pairs[index])
@@ -185,10 +186,10 @@ def mutate_structured(seq, pairs, v, v_list, T):
             pairs_mt.append((pairs[index+1], index+1))
             if pairs[index+1]+1 not in pairs:
                 unpairs_mt.append(pairs[index+1]+1)
-            
+
     assert len(pairs_mt) <= 2, pairs_mt
     assert len(unpairs_mt) <= 2, unpairs_mt
-    
+
     # one pair
     if len(pairs_mt) == 1:
         pairs_selected_index = np.random.choice(range(len(P1)))
@@ -196,7 +197,7 @@ def mutate_structured(seq, pairs, v, v_list, T):
     else: # two pair
         pairs_selected_index = np.random.choice(range(len(P2)))
         pairs_selected = P2[pairs_selected_index]
-        
+
     # one unpair
     if len(unpairs_mt) == 1:
         unpairs_selected_index = np.random.choice(range(len(U1)))
@@ -204,7 +205,7 @@ def mutate_structured(seq, pairs, v, v_list, T):
     else: # two unpair
         unpairs_selected_index = np.random.choice(range(len(U2)))
         unpairs_selected = U2[unpairs_selected_index]
-    
+
     nuc_list = list(seq)
     for pos_pair, pair in zip(pairs_mt, pairs_selected):
         nuc_list[pos_pair[0]] = pair[0]
@@ -212,7 +213,7 @@ def mutate_structured(seq, pairs, v, v_list, T):
     for pos_unpair, unpair in zip(unpairs_mt, unpairs_selected):
         nuc_list[pos_unpair] = unpair
     return "".join(nuc_list)
-        
+
 
 def samfeo(target, f, steps, k, t=1, check_mfe=True, sm=True, freq_print=10):
     global seed_np
@@ -223,7 +224,7 @@ def samfeo(target, f, steps, k, t=1, check_mfe=True, sm=True, freq_print=10):
     else:
         mutate = mutate_tradition
     print(f'steps: {steps}, t: {t}, k: {k}, structured mutation: {sm}, ensemble objective: {f.__name__}')
-    
+
     # targeted initilization
     pairs = pairs_match(target)
     intial_list = init_k(target, pairs, k)
@@ -232,6 +233,7 @@ def samfeo(target, f, steps, k, t=1, check_mfe=True, sm=True, freq_print=10):
     log = []
     dist_list = []
     mfe_list = []
+    umfe_list = []
     count_umfe = 0
     for p in intial_list:
         v_list, v, ss_list = f(p, target) # v_list: positional NED, v: objective value, ss_list: (multiple) MFE structures by subopt of ViennaRNA
@@ -240,20 +242,21 @@ def samfeo(target, f, steps, k, t=1, check_mfe=True, sm=True, freq_print=10):
         rna_struct.subcount = len(ss_list)
         k_best.append(rna_struct)
         history.add(rna_struct.seq)
-        
+
     # priority queue
     heapq.heapify(k_best)
     for i, rna_struct in enumerate(k_best):
         print(i, rna_struct)
         log.append(1-rna_struct.score)
-        if rna_struct.dist == 0: # MFE solution 
+        if rna_struct.dist == 0: # MFE solution
             mfe_list.append(rna_struct.seq)
         if rna_struct.dist == 0 and rna_struct.subcount == 1: # UMFE solution
             dist_list.append(-2)
+            umfe_list.append(rna_struct.seq)
             count_umfe += 1
         else:
             dist_list.append(rna_struct.dist)
-            
+
     # log of lowest objective value at eachs iterations
     v_min = min(log)
     iter_min = 0
@@ -267,7 +270,7 @@ def samfeo(target, f, steps, k, t=1, check_mfe=True, sm=True, freq_print=10):
         except Exception as e:
             print(e)
             p = np.random.choice(k_best)
-            
+
         # position sampling and mutation
         seq_next = mutate(p.seq, pairs, p.v, p.v_list, t)
         num_repeat = 0
@@ -281,11 +284,11 @@ def samfeo(target, f, steps, k, t=1, check_mfe=True, sm=True, freq_print=10):
             print(f'num_repeat: {num_repeat} > {len(target)*MAX_REPEAT}')
             break
         history.add(seq_next)
-        
+
         # evaluation new sequence
         v_list_next, v_next, ss_list = f(seq_next, target)
-        
-        # mfe and umfe solutions as byproducts 
+
+        # mfe and umfe solutions as byproducts
         umfe = False
         if check_mfe:
             dist =  min([struct_dist(target, ss_subopt) for ss_subopt in ss_list])
@@ -293,6 +296,7 @@ def samfeo(target, f, steps, k, t=1, check_mfe=True, sm=True, freq_print=10):
                 mfe_list.append(seq_next)
                 if len(ss_list) == 1:
                     umfe = True
+                    umfe_list.append(seq_next)
         else:
             dist = len(target) # set a dummy dist
         if not umfe:
@@ -300,23 +304,23 @@ def samfeo(target, f, steps, k, t=1, check_mfe=True, sm=True, freq_print=10):
         else:
             dist_list.append(-2)
             count_umfe += 1
-        
+
         # update priority queue(multi-frontier)
         rna_struct_next = RNAStructure(seq_next, 1 - v_next, v_next, v_list_next)
-        
+
         if len(k_best) < k:
             heapq.heappush(k_best, rna_struct_next)
         elif rna_struct_next > k_best[0]:
             heapq.heappushpop(k_best, rna_struct_next)
         if v_next <= v_min:
             iter_min = i
-            
+
         # update log
         v_min = min(v_min, v_next)
         log_min.append(v_min)
         log.append(v_next)
         assert len(dist_list) == len(log)
-        
+
         # output information during iteration
         if (i+1)%freq_print == 0:
             improve = v_min - log_min[-freq_print]
@@ -324,12 +328,12 @@ def samfeo(target, f, steps, k, t=1, check_mfe=True, sm=True, freq_print=10):
                 print(f"iter: {i+1: 5d}\t value: {v_min: .4f}\t mfe count: {len(mfe_list): 5d}\t umfe count: {count_umfe}\t best iter: {iter_min} improve: {improve:.2e}")
             else:
                 print(f"iter: {i+1: 5d}\t value: {v_min: .4f}\t best iter: {iter_min} improve: {improve:.2e}")
-                
+
         # stop if convergency condition is satisfied
-        if v_min < STOP or (len(log_min)>STAY and v_min - log_min[-STAY] > -1e-6): 
+        if v_min < STOP or (len(log_min)>STAY and v_min - log_min[-STAY] > -1e-6):
             break
-    return k_best, log, mfe_list, dist_list
-  
+    return k_best, log, mfe_list, umfe_list, dist_list
+
 
 # RNA design in batch
 def design(path_txt, name, func, num_step, k, t, check_mfe, sm):
@@ -345,7 +349,7 @@ def design(path_txt, name, func, num_step, k, t, check_mfe, sm):
         print(f'target structure {i}, {puzzle_name}:')
         print(target)
         start_time = time.time()
-        k_best, log, mfe_list, dist_list = samfeo(target, func, num_step, k=k, t=t, check_mfe=check_mfe, sm=sm) # rna and ensemble defect
+        k_best, log, mfe_list, umfe_list, dist_list = samfeo(target, func, num_step, k=k, t=t, check_mfe=check_mfe, sm=sm) # rna and ensemble defect
         finish_time = time.time()
         rna_best = max(k_best)
         seq = rna_best.seq
@@ -361,16 +365,16 @@ def design(path_txt, name, func, num_step, k, t, check_mfe, sm):
         data.append([puzzle_name, target, seq, obj, ss_mfe, dist, finish_time-start_time, log, k_best, mfe_list, dist_list])
         df = pd.DataFrame(data, columns=cols)
         df.to_csv(filename)
-        
+
 
 if __name__ == "__main__":
-    
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--path", '-p', type=str, default='')
     parser.add_argument("--object", '-o', type=str, default='pd')
     parser.add_argument("--k", type=int, default=10)
     parser.add_argument("--t", type=float, default=1)
-    parser.add_argument("--step", type=int, default=5000) 
+    parser.add_argument("--step", type=int, default=5000)
     parser.add_argument("--name", type=str, default='')
     parser.add_argument("--init", type=str, default='cg')
     parser.add_argument("--repeat", type=int, default=1)
@@ -379,7 +383,7 @@ if __name__ == "__main__":
     parser.add_argument("--nosm", action='store_true')
     parser.add_argument("--bp", action='store_true')
     parser.add_argument("--online", action='store_true')
-    
+
 
     args = parser.parse_args()
     print('args:')
@@ -393,14 +397,15 @@ if __name__ == "__main__":
         f_obj = position_ed_pd_mfe
     else:
         raise ValueError('the objective in not correct!')
-    
+
     if args.online:
         seed_np = 2020
         for line in sys.stdin:
             target = line.strip()
             print(target)
             start_time = time.time()
-            k_best, log, mfe_list, dist_list = samfeo(target, f_obj, args.step, k=args.k, t=args.t, check_mfe=not args.nomfe, sm=not args.nosm) # rna and ensemble defect
+            k_best, log, mfe_list, umfe_list, dist_list = samfeo(target, f_obj, args.step, k=args.k, t=args.t, check_mfe=not args.nomfe, sm=not args.nosm) # rna and ensemble defect
+            assert len(mfe_list )
             finish_time = time.time()
             rna_best = max(k_best)
             seq = rna_best.seq
@@ -413,8 +418,24 @@ if __name__ == "__main__":
             dist = struct_dist(target, ss_mfe)
             print(ss_mfe)
             print(f'structure distance: {dist}')
+            print(f'count of mfe solutsion: {len(mfe_list)}')
+            print(f'count of umfe solutions: {len(umfe_list)}')
+            print(k_best)
+            kbest_list = []
+            for rna_struct in k_best:
+                obj = 'prob' if args.object == 'pd' else 'ned'
+                # print(f'seq: {rna_struct.seq}, {obj}: {rna_struct.score}')
+                kbest_list.append({'seq': rna_struct.seq, obj: rna_struct.score})
+            print(' mfe samples:', mfe_list[-10:])
+            print('umfe samples:', umfe_list[-10:])
+            print('kbest:', k_best)
+            results = {'kbest': kbest_list, 'mfe': mfe_list, 'umfe': umfe_list}
+            filename = "_".join(["puzzle", target.replace('(', '[').replace(')', ']'), "seed", str(seed_np)]) + ".json"
+            with open(filename, 'w') as f:
+                json.dump(results, f)
+            print(f"full results are saved in the file: {filename}")
         exit(0)
-      
+
     for i in range(args.repeat):
         seed_np = 2020+(i+args.start)*2021
         np.random.seed(seed_np)
