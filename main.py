@@ -405,7 +405,6 @@ if __name__ == "__main__":
             print(target)
             start_time = time.time()
             k_best, log, mfe_list, umfe_list, dist_list = samfeo(target, f_obj, args.step, k=args.k, t=args.t, check_mfe=not args.nomfe, sm=not args.nosm) # rna and ensemble defect
-            assert len(mfe_list )
             finish_time = time.time()
             rna_best = max(k_best)
             seq = rna_best.seq
