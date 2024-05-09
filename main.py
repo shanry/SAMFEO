@@ -342,7 +342,7 @@ def design(path_txt, name, func, num_step, k, t, check_mfe, sm):
         for line in f:
             targets.append(line.strip())
     data = []
-    cols = ('puzzle_name', 'structure', 'rna', 'objective', 'mfe', 'dist', 'time', 'log', 'k_best', 'mfe_list', 'dist_list')
+    cols = ('puzzle_name', 'structure', 'rna', 'objective', 'mfe', 'dist', 'time', 'log', 'k_best', 'mfe_list', 'umfe_list')
     filename = f"{name}_{func.__name__}_t{t}_k{k}_step{num_step}_{name_pair}_{suffix}_mfe{check_mfe}_sm{sm}_time{int(time.time())}.csv"
     for i, target in enumerate(targets):
         puzzle_name = f"{name}_{i}"
@@ -362,7 +362,7 @@ def design(path_txt, name, func, num_step, k, t, check_mfe, sm):
         dist = struct_dist(target, ss_mfe)
         print(ss_mfe)
         print(f'structure distance: {dist}')
-        data.append([puzzle_name, target, seq, obj, ss_mfe, dist, finish_time-start_time, log, k_best, mfe_list, dist_list])
+        data.append([puzzle_name, target, seq, obj, ss_mfe, dist, finish_time-start_time, log, k_best, mfe_list, umfe_list])
         df = pd.DataFrame(data, columns=cols)
         df.to_csv(filename)
 
