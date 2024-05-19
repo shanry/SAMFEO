@@ -42,7 +42,7 @@ MAX_REPEAT =1000
 
 class RNAStructure:
 
-    def __init__(self, seq, score, v, v_list): # v_list: positional NED, v: objective value, socore: used for priority queue
+    def __init__(self, seq, score, v=None, v_list=None): # v_list: positional NED, v: objective value, socore: used for priority queue
         self.seq = seq
         self.score = score
         self.v = v
