@@ -1,5 +1,11 @@
 # SAMFEO
-RNA Design via Structure-Aware Multi-Frontier Ensemble Optimization
+Implementation of the RNA design methd proposed in the paper (ISMB 2023):
+
+[1] Zhou, T., Dai, N., Li, S., Ward, M., Mathews, D.H. and Huang, L., 2023. RNA design via structure-aware multifrontier ensemble optimization. Bioinformatics, 39(Supplement_1), pp.i563-i571.
+
+## TODO
+evaluation scripts \
+more results of RNA design
 
 ## Dependency
 python3 \
