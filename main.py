@@ -38,7 +38,10 @@ nuc_pair_all = ['AU', 'UA', 'CG', 'GC', 'UG', 'GU']
 STAY = 2000
 STOP = 0.01
 MAX_REPEAT =1000
+FREQ_PRINT = 10
 
+WORKER_COUNT = 10                                                                
+BATCH_SIZE = 20  
 
 class RNAStructure:
 
@@ -215,7 +218,8 @@ def mutate_structured(seq, pairs, v, v_list, T):
     return "".join(nuc_list)
 
 
-def samfeo(target, f, steps, k, t=1, check_mfe=True, sm=True, freq_print=10):
+def samfeo(target, f, steps, k, t=1, check_mfe=True, sm=True, freq_print=FREQ_PRINT):
+    start_time = time.time()
     global seed_np
     np.random.seed(seed_np)
     print(f'seed_np: {seed_np}')
@@ -235,6 +239,7 @@ def samfeo(target, f, steps, k, t=1, check_mfe=True, sm=True, freq_print=10):
     mfe_list = []
     umfe_list = []
     count_umfe = 0
+    ned_best = (1, None)
     for p in intial_list:
         v_list, v, ss_list = f(p, target) # v_list: positional NED, v: objective value, ss_list: (multiple) MFE structures by subopt of ViennaRNA
         rna_struct = RNAStructure(seq=p, score=1-v, v=v, v_list=v_list)
@@ -242,6 +247,9 @@ def samfeo(target, f, steps, k, t=1, check_mfe=True, sm=True, freq_print=10):
         rna_struct.subcount = len(ss_list)
         k_best.append(rna_struct)
         history.add(rna_struct.seq)
+        # record the best NED
+        if  sum(v_list) <= ned_best[0]:
+            ned_best = (sum(v_list), p)
 
     # priority queue
     heapq.heapify(k_best)
@@ -305,6 +313,10 @@ def samfeo(target, f, steps, k, t=1, check_mfe=True, sm=True, freq_print=10):
             dist_list.append(-2)
             count_umfe += 1
 
+        # compare with best ned
+        if  sum(v_list_next) <= ned_best[0]:
+            ned_best = (sum(v_list_next), seq_next)
+
         # update priority queue(multi-frontier)
         rna_struct_next = RNAStructure(seq_next, 1 - v_next, v_next, v_list_next)
 
@@ -332,8 +344,14 @@ def samfeo(target, f, steps, k, t=1, check_mfe=True, sm=True, freq_print=10):
         # stop if convergency condition is satisfied
         if v_min < STOP or (len(log_min)>STAY and v_min - log_min[-STAY] > -1e-6):
             break
-    return k_best, log, mfe_list, umfe_list, dist_list
+    end_time = time.time()  # Record the end time
+    elapsed_time = end_time - start_time  # Calculate the elapsed time
+    return k_best, log, mfe_list, umfe_list, dist_list, ned_best, elapsed_time
 
+
+def samfeo_para(args):
+    target, f, steps, k, t, check_mfe, sm, freq_print = args
+    return samfeo(target, f, steps, k, t, check_mfe, sm, freq_print)
 
 # RNA design in batch
 def design(path_txt, name, func, num_step, k, t, check_mfe, sm):
@@ -342,14 +360,14 @@ def design(path_txt, name, func, num_step, k, t, check_mfe, sm):
         for line in f:
             targets.append(line.strip())
     data = []
-    cols = ('puzzle_name', 'structure', 'rna', 'objective', 'mfe', 'dist', 'time', 'log', 'k_best', 'mfe_list', 'umfe_list')
+    cols = ('puzzle_name', 'structure', 'rna', 'objective', 'mfe', 'dist', 'time', 'log', 'k_best', 'mfe_list', 'umfe_list', 'ned_best')
     filename = f"{name}_{func.__name__}_t{t}_k{k}_step{num_step}_{name_pair}_{suffix}_mfe{check_mfe}_sm{sm}_time{int(time.time())}.csv"
     for i, target in enumerate(targets):
         puzzle_name = f"{name}_{i}"
         print(f'target structure {i}, {puzzle_name}:')
         print(target)
         start_time = time.time()
-        k_best, log, mfe_list, umfe_list, dist_list = samfeo(target, func, num_step, k=k, t=t, check_mfe=check_mfe, sm=sm) # rna and ensemble defect
+        k_best, log, mfe_list, umfe_list, dist_list, ned_best,elapsed_time = samfeo(target, func, num_step, k=k, t=t, check_mfe=check_mfe, sm=sm) # rna and ensemble defect
         finish_time = time.time()
         rna_best = max(k_best)
         seq = rna_best.seq
@@ -362,9 +380,55 @@ def design(path_txt, name, func, num_step, k, t, check_mfe, sm):
         dist = struct_dist(target, ss_mfe)
         print(ss_mfe)
         print(f'structure distance: {dist}')
-        data.append([puzzle_name, target, seq, obj, ss_mfe, dist, finish_time-start_time, log, k_best, mfe_list, umfe_list])
+        data.append([puzzle_name, target, seq, obj, ss_mfe, dist, finish_time-start_time, log, k_best, mfe_list, umfe_list, ned_best])
         df = pd.DataFrame(data, columns=cols)
         df.to_csv(filename)
+
+
+# RNA design with multiple processing
+def design_para(path_txt, name, func, num_step, k, t, check_mfe, sm):
+    from multiprocessing import Pool, cpu_count                                                          
+    print('BATCH_SIZE:', BATCH_SIZE)                                             
+    print('WORKER_COUNT:', WORKER_COUNT)         
+    targets = []
+    with open(path_txt) as f:
+        for line in f:
+            targets.append(line.strip())
+    data = []
+    cols = ('puzzle_name', 'structure', 'rna', 'objective', 'mfe', 'dist', 'time', 'log', 'k_best', 'mfe_list', 'umfe_list', 'ned_best')
+    filename = f"{name}_{func.__name__}_t{t}_k{k}_step{num_step}_{name_pair}_{suffix}_mfe{check_mfe}_sm{sm}_para_time{int(time.time())}.csv"
+    for i_batch in range(0, len(targets), BATCH_SIZE):                           
+        pool = Pool(WORKER_COUNT)                                                
+        args_map = []                                                            
+        for j, target in enumerate(targets[i_batch: min(i_batch+BATCH_SIZE, len(targets))]):
+            args_map.append((target, func, num_step, k, t, check_mfe, sm, FREQ_PRINT))
+        print("args_map:")
+        print(args_map)
+        results_pool = pool.map(samfeo_para, args_map)                             
+        pool.close()                                                             
+        pool.join()
+        for j, result in enumerate(results_pool):
+            idx_puzzle = i_batch+j
+            puzzle_name = f"{name}_{idx_puzzle}"
+            target = targets[idx_puzzle]
+            print(f'target structure {idx_puzzle}, {puzzle_name}:')
+            print(target)
+            k_best, log, mfe_list, umfe_list, dist_list, ned_best, elapsed_time = result
+
+            rna_best = max(k_best)
+            seq = rna_best.seq
+            obj = 1 - rna_best.score
+            print('RNA sequence: ')
+            print(seq)
+            print('ensemble objective: ', obj)
+            print(target)
+            ss_mfe = mfe(seq)[0]
+            dist = struct_dist(target, ss_mfe)
+            print(ss_mfe)
+            print(f'structure distance: {dist}')
+            data.append([puzzle_name, target, seq, obj, ss_mfe, dist, elapsed_time, log, k_best, mfe_list, umfe_list, ned_best])
+            df = pd.DataFrame(data, columns=cols)
+            df.to_csv(filename)
 
 
 if __name__ == "__main__":
@@ -383,6 +447,10 @@ if __name__ == "__main__":
     parser.add_argument("--nosm", action='store_true')
     parser.add_argument("--bp", action='store_true')
     parser.add_argument("--online", action='store_true')
+    parser.add_argument("--para", action='store_true')
+    parser.add_argument("--worker_count", type=int, default=10)
+    parser.add_argument("--batch_size", type=int, default=20)
+
 
 
     args = parser.parse_args()
@@ -404,7 +472,7 @@ if __name__ == "__main__":
             target = line.strip()
             print(target)
             start_time = time.time()
-            k_best, log, mfe_list, umfe_list, dist_list = samfeo(target, f_obj, args.step, k=args.k, t=args.t, check_mfe=not args.nomfe, sm=not args.nosm) # rna and ensemble defect
+            k_best, log, mfe_list, umfe_list, dist_list, ned_best, elapsed_time = samfeo(target, f_obj, args.step, k=args.k, t=args.t, check_mfe=not args.nomfe, sm=not args.nosm) # rna and ensemble defect
             finish_time = time.time()
             rna_best = max(k_best)
             seq = rna_best.seq
@@ -428,7 +496,7 @@ if __name__ == "__main__":
             print(' mfe samples:', mfe_list[-10:])
             print('umfe samples:', umfe_list[-10:])
             print('kbest:', k_best)
-            results = {'kbest': kbest_list, 'mfe': mfe_list, 'umfe': umfe_list}
+            results = {'kbest': kbest_list, 'mfe': mfe_list, 'umfe': umfe_list, 'ned_best': ned_best}
             filename = "_".join(["puzzle", target.replace('(', '[').replace(')', ']'), "seed", str(seed_np)]) + ".json"
             with open(filename, 'w') as f:
                 json.dump(results, f)
@@ -439,4 +507,9 @@ if __name__ == "__main__":
         seed_np = 2020+(i+args.start)*2021
         np.random.seed(seed_np)
         suffix = f"{i+args.start}"
-        design(args.path, name_input, f_obj, args.step, k=args.k, t=args.t, check_mfe=not args.nomfe, sm=not args.nosm)
+        if args.para:
+            WORKER_COUNT = args.worker_count                                                              
+            BATCH_SIZE = args.batch_size 
+            design_para(args.path, name_input, f_obj, args.step, k=args.k, t=args.t, check_mfe=not args.nomfe, sm=not args.nosm)
+        else:
+            design(args.path, name_input, f_obj, args.step, k=args.k, t=args.t, check_mfe=not args.nomfe, sm=not args.nosm)
