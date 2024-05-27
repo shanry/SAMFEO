@@ -43,6 +43,8 @@ FREQ_PRINT = 10
 WORKER_COUNT = 10                                                                
 BATCH_SIZE = 20  
 
+LOG = False
+
 class RNAStructure:
 
     def __init__(self, seq, score, v=None, v_list=None): # v_list: positional NED, v: objective value, socore: used for priority queue
@@ -248,8 +250,9 @@ def samfeo(target, f, steps, k, t=1, check_mfe=True, sm=True, freq_print=FREQ_PR
         k_best.append(rna_struct)
         history.add(rna_struct.seq)
         # record the best NED
-        if  sum(v_list) <= ned_best[0]:
-            ned_best = (sum(v_list), p)
+        ned_p = np.mean(v_list)
+        if  ned_p <= ned_best[0]:
+            ned_best = (ned_p, p)
 
     # priority queue
     heapq.heapify(k_best)
@@ -314,8 +317,9 @@ def samfeo(target, f, steps, k, t=1, check_mfe=True, sm=True, freq_print=FREQ_PR
             count_umfe += 1
 
         # compare with best ned
-        if  sum(v_list_next) <= ned_best[0]:
-            ned_best = (sum(v_list_next), seq_next)
+        ned_next = np.mean(v_list_next)
+        if  ned_next <= ned_best[0]:
+            ned_best = (ned_next, seq_next)
 
         # update priority queue(multi-frontier)
         rna_struct_next = RNAStructure(seq_next, 1 - v_next, v_next, v_list_next)
@@ -360,7 +364,9 @@ def design(path_txt, name, func, num_step, k, t, check_mfe, sm):
         for line in f:
             targets.append(line.strip())
     data = []
-    cols = ('puzzle_name', 'structure', 'rna', 'objective', 'mfe', 'dist', 'time', 'log', 'k_best', 'mfe_list', 'umfe_list', 'ned_best')
+    cols = ('puzzle_name', 'structure', 'rna', 'objective', 'mfe', 'dist', 'time', 'k_best', 'ned_best')
+    if LOG:
+        cols = ('puzzle_name', 'structure', 'rna', 'objective', 'mfe', 'dist', 'time', 'log', 'k_best', 'mfe_list', 'umfe_list', 'ned_best')
     filename = f"{name}_{func.__name__}_t{t}_k{k}_step{num_step}_{name_pair}_{suffix}_mfe{check_mfe}_sm{sm}_time{int(time.time())}.csv"
     for i, target in enumerate(targets):
         puzzle_name = f"{name}_{i}"
@@ -380,7 +386,11 @@ def design(path_txt, name, func, num_step, k, t, check_mfe, sm):
         dist = struct_dist(target, ss_mfe)
         print(ss_mfe)
         print(f'structure distance: {dist}')
-        data.append([puzzle_name, target, seq, obj, ss_mfe, dist, finish_time-start_time, log, k_best, mfe_list, umfe_list, ned_best])
+        if LOG:
+            data.append([puzzle_name, target, seq, obj, ss_mfe, dist, elapsed_time, log, k_best, mfe_list, umfe_list, ned_best])
+        else:
+            data.append([puzzle_name, target, seq, obj, ss_mfe, dist, elapsed_time, k_best, ned_best])
+        # data.append([puzzle_name, target, seq, obj, ss_mfe, dist, finish_time-start_time, log, k_best, mfe_list, umfe_list, ned_best])
         df = pd.DataFrame(data, columns=cols)
         df.to_csv(filename)
 
@@ -395,7 +405,9 @@ def design_para(path_txt, name, func, num_step, k, t, check_mfe, sm):
         for line in f:
             targets.append(line.strip())
     data = []
-    cols = ('puzzle_name', 'structure', 'rna', 'objective', 'mfe', 'dist', 'time', 'log', 'k_best', 'mfe_list', 'umfe_list', 'ned_best')
+    cols = ('puzzle_name', 'structure', 'rna', 'objective', 'mfe', 'dist', 'time', 'k_best', 'ned_best')
+    if LOG:
+        cols = ('puzzle_name', 'structure', 'rna', 'objective', 'mfe', 'dist', 'time', 'log', 'k_best', 'mfe_list', 'umfe_list', 'ned_best')
     filename = f"{name}_{func.__name__}_t{t}_k{k}_step{num_step}_{name_pair}_{suffix}_mfe{check_mfe}_sm{sm}_para_time{int(time.time())}.csv"
     for i_batch in range(0, len(targets), BATCH_SIZE):                           
         pool = Pool(WORKER_COUNT)                                                
@@ -426,7 +438,10 @@ def design_para(path_txt, name, func, num_step, k, t, check_mfe, sm):
             dist = struct_dist(target, ss_mfe)
             print(ss_mfe)
             print(f'structure distance: {dist}')
-            data.append([puzzle_name, target, seq, obj, ss_mfe, dist, elapsed_time, log, k_best, mfe_list, umfe_list, ned_best])
+            if LOG:
+                data.append([puzzle_name, target, seq, obj, ss_mfe, dist, elapsed_time, log, k_best, mfe_list, umfe_list, ned_best])
+            else:
+                data.append([puzzle_name, target, seq, obj, ss_mfe, dist, elapsed_time, k_best, ned_best])
             df = pd.DataFrame(data, columns=cols)
             df.to_csv(filename)
 
@@ -446,6 +461,7 @@ if __name__ == "__main__":
     parser.add_argument("--nomfe", action='store_true')
     parser.add_argument("--nosm", action='store_true')
     parser.add_argument("--bp", action='store_true')
+    parser.add_argument("--nolog", action='store_true')
     parser.add_argument("--online", action='store_true')
     parser.add_argument("--para", action='store_true')
     parser.add_argument("--worker_count", type=int, default=10)
@@ -465,7 +481,7 @@ if __name__ == "__main__":
         f_obj = position_ed_pd_mfe
     else:
         raise ValueError('the objective in not correct!')
-
+    LOG = not args.nolog
     if args.online:
         seed_np = 2020
         for line in sys.stdin:
@@ -496,6 +512,7 @@ if __name__ == "__main__":
             print(' mfe samples:', mfe_list[-10:])
             print('umfe samples:', umfe_list[-10:])
             print('kbest:', k_best)
+            print('ned_best:', ned_best)
             results = {'kbest': kbest_list, 'mfe': mfe_list, 'umfe': umfe_list, 'ned_best': ned_best}
             filename = "_".join(["puzzle", target.replace('(', '[').replace(')', ']'), "seed", str(seed_np)]) + ".json"
             with open(filename, 'w') as f:
