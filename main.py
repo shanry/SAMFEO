@@ -12,7 +12,8 @@ from utils.vienna import position_ed_pd_mfe, position_ed_ned_mfe, mfe
 from utils.structure import extract_pairs, struct_dist
 from utils.constants import P1, P2, U1, U2
 
-# from multiprocessing import Pool, cpu_count
+import multiprocessing
+multiprocessing.set_start_method('fork')
 
 
 name2pair = {'cg':['CG', 'GC'],
@@ -399,16 +400,6 @@ def design(path_txt, name, func, num_step, k, t, check_mfe, sm):
 
 # RNA design with multiple processing
 def design_para(path_txt, name, func, num_step, k, t, check_mfe, sm):
-    import multiprocessing
-    multiprocessing.set_start_method('fork')
-    try:
-        multiprocessing.set_start_method('fork')
-    except RuntimeError as e:
-        if 'context has already been set' in str(e):
-            pass  # context already set, continue with the existing one
-        else:
-            raise  # re-raise the exception if it's not the expected one
-    
     from multiprocessing import Pool                                                          
     print('BATCH_SIZE:', BATCH_SIZE)                                             
     print('WORKER_COUNT:', WORKER_COUNT)         
