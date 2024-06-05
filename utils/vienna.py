@@ -93,7 +93,7 @@ def position_ed_pd_mfe(seq, ss, scale=True):
     pairs = extract_pairs(ss)
     defect_pos = [1 - bpp[i, j] for i, j in enumerate(pairs)]
     pr = fc.pr_structure(ss)
-    pd = 1.0 - pr
+    pd = - pr
     return defect_pos, pd, ss_list
 
 

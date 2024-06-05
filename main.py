@@ -37,6 +37,8 @@ nuc_pair_all = ['AU', 'UA', 'CG', 'GC', 'UG', 'GU']
 
 STAY = 2000
 STOP = 0.01
+EPSILON = 1e-10
+
 MAX_REPEAT =1000
 FREQ_PRINT = 10
 
@@ -69,7 +71,7 @@ class RNAStructure:
         return self.score <= other.score
 
     def __str__(self):
-        return f"{self.seq}: {self.score: .4f}, {1-self.score: .4f}"
+        return f"{self.seq}: {self.score: .4f}"
 
     def __repr__(self):
         return f"RNAStructure('{self.seq}', {self.score})"
@@ -244,7 +246,7 @@ def samfeo(target, f, steps, k, t=1, check_mfe=True, sm=True, freq_print=FREQ_PR
     ned_best = (1, None)
     for p in intial_list:
         v_list, v, ss_list = f(p, target) # v_list: positional NED, v: objective value, ss_list: (multiple) MFE structures by subopt of ViennaRNA
-        rna_struct = RNAStructure(seq=p, score=1-v, v=v, v_list=v_list)
+        rna_struct = RNAStructure(seq=p, score=-v, v=v, v_list=v_list)
         rna_struct.dist = min([struct_dist(target, ss_subopt) for ss_subopt in ss_list]) # ss: secondary structure
         rna_struct.subcount = len(ss_list)
         k_best.append(rna_struct)
@@ -258,7 +260,7 @@ def samfeo(target, f, steps, k, t=1, check_mfe=True, sm=True, freq_print=FREQ_PR
     heapq.heapify(k_best)
     for i, rna_struct in enumerate(k_best):
         print(i, rna_struct)
-        log.append(1-rna_struct.score)
+        log.append(-rna_struct.score)
         if rna_struct.dist == 0: # MFE solution
             mfe_list.append(rna_struct.seq)
         if rna_struct.dist == 0 and rna_struct.subcount == 1: # UMFE solution
@@ -322,7 +324,7 @@ def samfeo(target, f, steps, k, t=1, check_mfe=True, sm=True, freq_print=FREQ_PR
             ned_best = (ned_next, seq_next)
 
         # update priority queue(multi-frontier)
-        rna_struct_next = RNAStructure(seq_next, 1 - v_next, v_next, v_list_next)
+        rna_struct_next = RNAStructure(seq_next, - v_next, v_next, v_list_next)
 
         if len(k_best) < k:
             heapq.heappush(k_best, rna_struct_next)
@@ -341,12 +343,12 @@ def samfeo(target, f, steps, k, t=1, check_mfe=True, sm=True, freq_print=FREQ_PR
         if (i+1)%freq_print == 0:
             improve = v_min - log_min[-freq_print]
             if check_mfe:
-                print(f"iter: {i+1: 5d}\t value: {v_min: .4f}\t mfe count: {len(mfe_list): 5d}\t umfe count: {count_umfe}\t best iter: {iter_min} improve: {improve:.2e}")
+                print(f"iter: {i+1: 5d}\t value: {v_min: .4e}\t mfe count: {len(mfe_list): 5d}\t umfe count: {count_umfe}\t best iter: {iter_min} improve: {improve:.2e}")
             else:
-                print(f"iter: {i+1: 5d}\t value: {v_min: .4f}\t best iter: {iter_min} improve: {improve:.2e}")
+                print(f"iter: {i+1: 5d}\t value: {v_min: .4e}\t best iter: {iter_min} improve: {improve:.4e}")
 
         # stop if convergency condition is satisfied
-        if v_min < STOP or (len(log_min)>STAY and v_min - log_min[-STAY] > -1e-6):
+        if v_min < STOP - 1.0 or (len(log_min)>STAY and v_min - log_min[-STAY] > -EPSILON):
             break
     end_time = time.time()  # Record the end time
     elapsed_time = end_time - start_time  # Calculate the elapsed time
@@ -429,7 +431,7 @@ def design_para(path_txt, name, func, num_step, k, t, check_mfe, sm):
 
             rna_best = max(k_best)
             seq = rna_best.seq
-            obj = 1 - rna_best.score
+            obj = - rna_best.score
             print('RNA sequence: ')
             print(seq)
             print('ensemble objective: ', obj)
@@ -454,6 +456,7 @@ if __name__ == "__main__":
     parser.add_argument("--k", type=int, default=10)
     parser.add_argument("--t", type=float, default=1)
     parser.add_argument("--step", type=int, default=5000)
+    parser.add_argument("--stay", type=int, default=2000)
     parser.add_argument("--name", type=str, default='')
     parser.add_argument("--init", type=str, default='cg')
     parser.add_argument("--repeat", type=int, default=1)
@@ -473,6 +476,7 @@ if __name__ == "__main__":
     print('args:')
     print(args)
     global name_pair, stop, seed_np
+    STAY = args.stay
     name_pair = args.init
     name_input = args.path.split("/")[-1].split('.')[0]
     if args.object == 'ned': # normalized ensemble defect
