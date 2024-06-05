@@ -399,7 +399,10 @@ def design(path_txt, name, func, num_step, k, t, check_mfe, sm):
 
 # RNA design with multiple processing
 def design_para(path_txt, name, func, num_step, k, t, check_mfe, sm):
-    from multiprocessing import Pool, cpu_count                                                          
+    import multiprocessing
+    multiprocessing.set_start_method('fork')
+    
+    from multiprocessing import Pool                                                          
     print('BATCH_SIZE:', BATCH_SIZE)                                             
     print('WORKER_COUNT:', WORKER_COUNT)         
     targets = []
