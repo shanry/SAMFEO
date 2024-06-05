@@ -401,6 +401,13 @@ def design(path_txt, name, func, num_step, k, t, check_mfe, sm):
 def design_para(path_txt, name, func, num_step, k, t, check_mfe, sm):
     import multiprocessing
     multiprocessing.set_start_method('fork')
+    try:
+        multiprocessing.set_start_method('fork')
+    except RuntimeError as e:
+        if 'context has already been set' in str(e):
+            pass  # context already set, continue with the existing one
+        else:
+            raise  # re-raise the exception if it's not the expected one
     
     from multiprocessing import Pool                                                          
     print('BATCH_SIZE:', BATCH_SIZE)                                             
