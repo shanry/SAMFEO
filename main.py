@@ -71,7 +71,7 @@ class RNAStructure:
         return self.score <= other.score
 
     def __str__(self):
-        return f"{self.seq}: {self.score: .4f}"
+        return f"{self.seq}: {self.score: .4e}"
 
     def __repr__(self):
         return f"RNAStructure('{self.seq}', {self.score})"
