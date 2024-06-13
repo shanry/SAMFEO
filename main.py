@@ -38,7 +38,8 @@ nuc_pair_all = ['AU', 'UA', 'CG', 'GC', 'UG', 'GU']
 
 STAY = 2000
 STOP = 0.01
-EPSILON = 1e-10
+# EPSILON = 1e-40
+EPSILON_r = 1e-4
 
 MAX_REPEAT =1000
 FREQ_PRINT = 10
@@ -349,7 +350,9 @@ def samfeo(target, f, steps, k, t=1, check_mfe=True, sm=True, freq_print=FREQ_PR
                 print(f"iter: {i+1: 5d}\t value: {v_min: .4e}\t best iter: {iter_min} improve: {improve:.4e}")
 
         # stop if convergency condition is satisfied
-        if v_min < STOP - 1.0 or (len(log_min)>STAY and v_min - log_min[-STAY] > -EPSILON):
+        if f == position_ed_pd_mfe and ( v_min < STOP - 1.0 or (len(log_min)>STAY and v_min - log_min[-STAY] > abs(EPSILON_r*v_min)) ):
+            break
+        if f == position_ed_ned_mfe and ( v_min < STOP or (len(log_min)>STAY and v_min - log_min[-STAY] > abs(EPSILON_r*v_min)) ):
             break
     end_time = time.time()  # Record the end time
     elapsed_time = end_time - start_time  # Calculate the elapsed time
