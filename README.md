@@ -100,6 +100,7 @@ The design results will be output as a csv file with the following columns.
 ``mfe``: the MFE structure of ``rna``, given by ViennaRNA folding engine. \
 ``dist_best``: the best structural distance observed along the way of optimization, as well as the corresopnding sequence, in the format of a tuple. \
 ``ned_best``: the best ned observed along the way of optimization, as well as the corresopnding sequence, in the format of a tuple. \
+``ddg_best``: the best $\Delta\Delta G$ observed along the way of optimization, as well as the corresopnding sequence, in the format of a tuple. \
 ``mfe_list``: a list containing all the MFE solutions found. The order of the list is based on the time when each MFE solution is detected.   \
 ``umfe_list``: a list containing all the uMFE solutions found. The order of the list is based on the time when each uMFE solution is detected.   \
 ``k_best``: the priority queue at the final iteration. \

@@ -106,6 +106,12 @@ def position_ed_ned_mfe(seq, ss):
 def energy(seq, ss):
     fc = RNA.fold_compound(seq)
     return fc.eval_structure(ss)
+
+def delta_delta_energy(x, y1, y2=None):
+    fc = RNA.fold_compound(x)
+    if y2 is None:
+        y2 = mfe(x)
+    return fc.eval_structure(y1) - fc.eval_structure(y2)
     
 
 def mfe(seq):
