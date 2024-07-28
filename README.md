@@ -73,6 +73,8 @@ full results are saved in the file: puzzle_[[[[[......]]]]]_seed_2020.json
 
 ### Batch mode (input a file in which each line is a structure)
 ``python main.py --t 1 --k 10 --object pd --path data/eterna/eterna100.txt # plus other design options`` 
+### Batch mode with parallelism (input a file in which each line is a structure)
+``python main.py --t 1 --k 10 --object pd --para --worker_count 10 --batch_size 20 --path data/eterna/eterna100.txt # plus other design options`` 
 ### Design options
 ``--online`` turn on online mode. \
 ``--t`` set the sampling temprature(T in the paper). The default value is 1. \
@@ -84,7 +86,11 @@ full results are saved in the file: puzzle_[[[[[......]]]]]_seed_2020.json
 
 ``--step`` set maximum number of iterations. The default value is 5000. \
 ``--repeat`` set the number of repeated experiments. The default value is 1. (only for batch mode)\
-``--start`` set the starting index for naming the output file. The default value is 0. (only for batch mode)
+``--start`` set the starting index for naming the output file. The default value is 0. (only for batch mode)\
+``--para`` activate multiprocessing to run fast. (only for batch mode)\
+``--worker_count`` set the number of worker for multiprocessing. The default value is 10. (only for batch mode)\
+``--batch_size`` set the batch size for multiprocessing, should be greater or equal than `worker_count`. The default value is 20. (only for batch mode)
+
 ### Batch mode output format
 The design results will be output as a csv file with the following columns.
 
@@ -92,7 +98,8 @@ The design results will be output as a csv file with the following columns.
 ``objective``: the best (lowest) objective value achived during optimization. \
 ``rna``: the sequence with the best objective during optimization. \
 ``mfe``: the MFE structure of ``rna``, given by ViennaRNA folding engine. \
-``dist``: the distance between ``mfe`` and ``structure``. \
+``dist_best``: the best structural distance observed along the way of optimization, as well as the corresopnding sequence, in the format of a tuple. \
+``ned_best``: the best ned observed along the way of optimization, as well as the corresopnding sequence, in the format of a tuple. \
 ``mfe_list``: a list containing all the MFE solutions found. The order of the list is based on the time when each MFE solution is detected.   \
 ``umfe_list``: a list containing all the uMFE solutions found. The order of the list is based on the time when each uMFE solution is detected.   \
 ``k_best``: the priority queue at the final iteration. \
