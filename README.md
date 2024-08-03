@@ -3,16 +3,9 @@ Implementation of the RNA design methd proposed in the paper (ISMB 2023):
 
 [1] Zhou, T., Dai, N., Li, S., Ward, M., Mathews, D.H. and Huang, L., 2023. RNA design via structure-aware multifrontier ensemble optimization. Bioinformatics, 39(Supplement_1), pp.i563-i571.
 
-## TODO
-evaluation scripts \
-more results of RNA design
-
 ## Dependency
 python3 \
-ViennaRNA-2.5.1
-
-## Environment Variable
-``export VIENNAPATH=/path/to/ViennaRNA/lib/python3.9/site-packages``
+pip install requirements.txt
 
 ## Structured Mutation
 <p align="center">
