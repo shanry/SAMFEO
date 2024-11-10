@@ -3,10 +3,6 @@ Implementation of the RNA design methd proposed in the paper (ISMB 2023):
 
 [1] Zhou, T., Dai, N., Li, S., Ward, M., Mathews, D.H. and Huang, L., 2023. RNA design via structure-aware multifrontier ensemble optimization. Bioinformatics, 39(Supplement_1), pp.i563-i571.
 
-🚨 **Important Notice:** 🚨
-
-The `main` branch is currently being upgraded. For the latest stable version of the code used in the paper published in **ISMB2023**, please refer to the [`ismb2023`](https://github.com/shanry/SAMFEO/tree/ismb2023) branch.
-
 ## Dependency
 python3 \
 pip install requirements.txt
