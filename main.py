@@ -1,6 +1,8 @@
 import os
 import sys
 import time
+from datetime import datetime
+import random
 import json
 import heapq
 import argparse
@@ -521,8 +523,11 @@ if __name__ == "__main__":
             print('umfe samples:', umfe_list[-10:])
             print('kbest:', k_best)
             print('ned_best:', ned_best)
-            results = {'kbest': kbest_list, 'mfe': mfe_list, 'umfe': umfe_list, 'ned_best': ned_best}
+            results = {'target': target, 'kbest': kbest_list, 'mfe': mfe_list, 'umfe': umfe_list, 'ned_best': ned_best}
             filename = "_".join(["puzzle", target.replace('(', '[').replace(')', ']'), "seed", str(seed_np)]) + ".json"
+            timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+            id_random = random.randint(0, 1E7)
+            filename = f"results_{timestamp}_{id_random}.json"
             with open(filename, 'w') as f:
                 json.dump(results, f)
             print(f"full results are saved in the file: {filename}")
