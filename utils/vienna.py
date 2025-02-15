@@ -3,7 +3,8 @@ import sys
 import numpy as np
 from utils.structure import extract_pairs
 
-sys.path.append(os.environ.get('VIENNAPATH'))
+# sys.path.append(os.environ.get('VIENNAPATH')) # deprecated due to the python package of ViennaRNA
+
 import RNA
 
 def base_pair_probs(seq, sym=False, scale=True):

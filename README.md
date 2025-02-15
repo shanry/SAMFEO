@@ -7,9 +7,6 @@ Implementation of the RNA design methd proposed in the paper (ISMB 2023):
 python3 \
 pip install requirements.txt
 
-## Environment Variable
-``export VIENNAPATH=/path/to/ViennaRNA/lib/python3.9/site-packages``
-
 ## Structured Mutation
 <p align="center">
 <img src="figs/sm.png" width="400">
