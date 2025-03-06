@@ -526,7 +526,7 @@ if __name__ == "__main__":
             results = {'target': target, 'kbest': kbest_list, 'mfe': mfe_list, 'umfe': umfe_list, 'ned_best': ned_best}
             filename = "_".join(["puzzle", target.replace('(', '[').replace(')', ']'), "seed", str(seed_np)]) + ".json"
             timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-            id_random = random.randint(0, 1E7)
+            id_random = random.randint(0, int(1E7))
             filename = f"results_{timestamp}_{id_random}.json"
             with open(filename, 'w') as f:
                 json.dump(results, f)
