@@ -86,10 +86,12 @@ The design results will be output as a csv file with the following columns.
 ``objective``: the best (lowest) objective value achived during optimization. \
 ``rna``: the sequence with the best objective during optimization. \
 ``mfe``: the MFE structure of ``rna``, given by ViennaRNA folding engine. \
-``dist``: the distance between ``mfe`` and ``structure``. \
+``k_best``: the priority queue at the final iteration, containing the best sequences w.r.t. the objective. \
+``seq_list ``: the sequences along the way of optimization. \
+``dist_list``: the distance between every intermediate sequence in ``seq_list`` and ``structure``. \
 ``mfe_list``: a list containing all the MFE solutions found. The order of the list is based on the time when each MFE solution is detected.   \
 ``umfe_list``: a list containing all the uMFE solutions found. The order of the list is based on the time when each uMFE solution is detected.   \
-``k_best``: the priority queue at the final iteration. \
+``ned_best``: the best ned valude in the optimitzation process and the corresponding sequence.
 ``log``: the objective values at each iteration. \
 ``time``: the total time used to design the input puzzle ``structure``.
 

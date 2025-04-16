@@ -244,6 +244,7 @@ def samfeo(target, f, steps, k, t=1, check_mfe=True, sm=True, freq_print=FREQ_PR
     k_best = []
     log = []
     dist_list = []
+    seq_list = [] # sequence along the iteration
     mfe_list = []
     umfe_list = []
     count_umfe = 0
@@ -255,6 +256,7 @@ def samfeo(target, f, steps, k, t=1, check_mfe=True, sm=True, freq_print=FREQ_PR
         rna_struct.subcount = len(ss_list)
         k_best.append(rna_struct)
         history.add(rna_struct.seq)
+        seq_list.append(rna_struct.seq)
         # record the best NED
         ned_p = np.mean(v_list)
         if  ned_p <= ned_best[0]:
@@ -301,7 +303,7 @@ def samfeo(target, f, steps, k, t=1, check_mfe=True, sm=True, freq_print=FREQ_PR
             print(f'num_repeat: {num_repeat} > {len(target)*MAX_REPEAT}')
             break
         history.add(seq_next)
-
+        seq_list.append(seq_next)
         # evaluation new sequence
         v_list_next, v_next, ss_list = f(seq_next, target)
 
@@ -342,6 +344,7 @@ def samfeo(target, f, steps, k, t=1, check_mfe=True, sm=True, freq_print=FREQ_PR
         log_min.append(v_min)
         log.append(v_next)
         assert len(dist_list) == len(log)
+        assert len(seq_list) == len(log)
 
         # output information during iteration
         if (i+1)%freq_print == 0:
@@ -358,7 +361,7 @@ def samfeo(target, f, steps, k, t=1, check_mfe=True, sm=True, freq_print=FREQ_PR
             break
     end_time = time.time()  # Record the end time
     elapsed_time = end_time - start_time  # Calculate the elapsed time
-    return k_best, log, mfe_list, umfe_list, dist_list, ned_best, elapsed_time
+    return k_best, log, mfe_list, umfe_list, dist_list, ned_best, seq_list, elapsed_time
 
 
 def samfeo_para(args):
@@ -372,17 +375,17 @@ def design(path_txt, name, func, num_step, k, t, check_mfe, sm):
         for line in f:
             targets.append(line.strip())
     data = []
-    cols = ('puzzle_name', 'structure', 'rna', 'objective', 'mfe', 'dist', 'time', 'k_best', 'ned_best')
+    cols = ('puzzle_name', 'structure', 'rna', 'objective', 'mfe', 'dist_list', 'time', 'k_best', 'ned_best', 'seq_list')
     if LOG:
-        cols = ('puzzle_name', 'structure', 'rna', 'objective', 'mfe', 'dist', 'time', 'log', 'k_best', 'mfe_list', 'umfe_list', 'ned_best')
+        cols = ('puzzle_name', 'structure', 'rna', 'objective', 'mfe', 'dist_list', 'time', 'log', 'k_best', 'mfe_list', 'umfe_list', 'ned_best', 'seq_list')
     filename = f"{name}_{func.__name__}_t{t}_k{k}_step{num_step}_{name_pair}_{suffix}_mfe{check_mfe}_sm{sm}_time{int(time.time())}.csv"
     for i, target in enumerate(targets):
         puzzle_name = f"{name}_{i}"
         print(f'target structure {i}, {puzzle_name}:')
         print(target)
-        start_time = time.time()
-        k_best, log, mfe_list, umfe_list, dist_list, ned_best,elapsed_time = samfeo(target, func, num_step, k=k, t=t, check_mfe=check_mfe, sm=sm) # rna and ensemble defect
-        finish_time = time.time()
+        # start_time = time.time()
+        k_best, log, mfe_list, umfe_list, dist_list, ned_best, seq_list, elapsed_time = samfeo(target, func, num_step, k=k, t=t, check_mfe=check_mfe, sm=sm) # rna and ensemble defect
+        # finish_time = time.time()
         rna_best = max(k_best)
         seq = rna_best.seq
         obj = 1 - rna_best.score
@@ -395,9 +398,9 @@ def design(path_txt, name, func, num_step, k, t, check_mfe, sm):
         print(ss_mfe)
         print(f'structure distance: {dist}')
         if LOG:
-            data.append([puzzle_name, target, seq, obj, ss_mfe, dist, elapsed_time, log, k_best, mfe_list, umfe_list, ned_best])
+            data.append([puzzle_name, target, seq, obj, ss_mfe, dist_list, elapsed_time, log, k_best, mfe_list, umfe_list, ned_best, seq_list])
         else:
-            data.append([puzzle_name, target, seq, obj, ss_mfe, dist, elapsed_time, k_best, ned_best])
+            data.append([puzzle_name, target, seq, obj, ss_mfe, dist_list, elapsed_time, k_best, ned_best, seq_list])
         # data.append([puzzle_name, target, seq, obj, ss_mfe, dist, finish_time-start_time, log, k_best, mfe_list, umfe_list, ned_best])
         df = pd.DataFrame(data, columns=cols)
         df.to_csv(filename)
@@ -413,9 +416,9 @@ def design_para(path_txt, name, func, num_step, k, t, check_mfe, sm):
         for line in f:
             targets.append(line.strip())
     data = []
-    cols = ('puzzle_name', 'structure', 'rna', 'objective', 'mfe', 'dist', 'time', 'k_best', 'ned_best')
+    cols = ('puzzle_name', 'structure', 'rna', 'objective', 'mfe', 'dist_list', 'time', 'k_best', 'ned_best', 'seq_list')
     if LOG:
-        cols = ('puzzle_name', 'structure', 'rna', 'objective', 'mfe', 'dist', 'time', 'log', 'k_best', 'mfe_list', 'umfe_list', 'ned_best')
+        cols = ('puzzle_name', 'structure', 'rna', 'objective', 'mfe', 'dist_list', 'time', 'log', 'k_best', 'mfe_list', 'umfe_list', 'ned_best', 'seq_list')
     filename = f"{name}_{func.__name__}_t{t}_k{k}_step{num_step}_{name_pair}_{suffix}_mfe{check_mfe}_sm{sm}_para_time{int(time.time())}.csv"
     for i_batch in range(0, len(targets), BATCH_SIZE):                           
         pool = Pool(WORKER_COUNT)                                                
@@ -433,7 +436,7 @@ def design_para(path_txt, name, func, num_step, k, t, check_mfe, sm):
             target = targets[idx_puzzle]
             print(f'target structure {idx_puzzle}, {puzzle_name}:')
             print(target)
-            k_best, log, mfe_list, umfe_list, dist_list, ned_best, elapsed_time = result
+            k_best, log, mfe_list, umfe_list, dist_list, ned_best, seq_list, elapsed_time = result
 
             rna_best = max(k_best)
             seq = rna_best.seq
@@ -447,9 +450,9 @@ def design_para(path_txt, name, func, num_step, k, t, check_mfe, sm):
             print(ss_mfe)
             print(f'structure distance: {dist}')
             if LOG:
-                data.append([puzzle_name, target, seq, obj, ss_mfe, dist, elapsed_time, log, k_best, mfe_list, umfe_list, ned_best])
+                data.append([puzzle_name, target, seq, obj, ss_mfe, dist_list, elapsed_time, log, k_best, mfe_list, umfe_list, ned_best, seq_list])
             else:
-                data.append([puzzle_name, target, seq, obj, ss_mfe, dist, elapsed_time, k_best, ned_best])
+                data.append([puzzle_name, target, seq, obj, ss_mfe, dist_list, elapsed_time, k_best, ned_best, seq_list])
             df = pd.DataFrame(data, columns=cols)
             df.to_csv(filename)
 
