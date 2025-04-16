@@ -3,6 +3,9 @@ import sys
 import numpy as np
 from utils.structure import extract_pairs
 
+from decimal import Decimal, getcontext
+getcontext().prec = 100
+
 # sys.path.append(os.environ.get('VIENNAPATH')) # deprecated due to the python package of ViennaRNA
 
 import RNA
@@ -94,7 +97,7 @@ def position_ed_pd_mfe(seq, ss, scale=True):
     pairs = extract_pairs(ss)
     defect_pos = [1 - bpp[i, j] for i, j in enumerate(pairs)]
     pr = fc.pr_structure(ss)
-    pd = - pr
+    pd = Decimal(1.0) - Decimal(pr) # probability defect
     return defect_pos, pd, ss_list
 
 
