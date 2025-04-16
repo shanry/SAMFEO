@@ -250,7 +250,7 @@ def samfeo(target, f, steps, k, t=1, check_mfe=True, sm=True, freq_print=FREQ_PR
     k_best = []
     log = []
     dist_list = []
-    seq_list = [] # sequence along the iteration
+    seq_list = [] # pair of sequences from improved mutation
     mfe_list = []
     umfe_list = []
     count_umfe = 0
@@ -262,7 +262,7 @@ def samfeo(target, f, steps, k, t=1, check_mfe=True, sm=True, freq_print=FREQ_PR
         rna_struct.subcount = len(ss_list)
         k_best.append(rna_struct)
         history.add(rna_struct.seq)
-        seq_list.append(rna_struct.seq)
+        # seq_list.append(rna_struct.seq)
         # record the best NED
         ned_p = np.mean(v_list)
         if  ned_p <= ned_best[0]:
@@ -312,7 +312,7 @@ def samfeo(target, f, steps, k, t=1, check_mfe=True, sm=True, freq_print=FREQ_PR
             print(f'num_repeat: {num_repeat} > {len(target)*MAX_REPEAT}')
             break
         history.add(seq_next)
-        seq_list.append(seq_next)
+        # seq_list.append(seq_next)
         # evaluation new sequence
         v_list_next, v_next, ss_list = f(seq_next, target)
 
@@ -340,6 +340,8 @@ def samfeo(target, f, steps, k, t=1, check_mfe=True, sm=True, freq_print=FREQ_PR
 
         # update priority queue(multi-frontier)
         rna_struct_next = RNAStructure(seq_next, -v_next, v_next, v_list_next)
+        if rna_struct_next.v <= p.v:
+            seq_list.append((p.seq, rna_struct_next.seq, str(p.v), str(rna_struct_next.v)))
 
         if len(k_best) < k:
             heapq.heappush(k_best, rna_struct_next)
@@ -353,7 +355,7 @@ def samfeo(target, f, steps, k, t=1, check_mfe=True, sm=True, freq_print=FREQ_PR
         log_min.append(v_min)
         log.append(v_next)
         assert len(dist_list) == len(log)
-        assert len(seq_list) == len(log)
+        # assert len(seq_list) == len(log)
 
         # output information during iteration
         if (i+1)%freq_print == 0:

@@ -87,7 +87,7 @@ The design results will be output as a csv file with the following columns.
 ``rna``: the sequence with the best objective during optimization. \
 ``mfe``: the MFE structure of ``rna``, given by ViennaRNA folding engine. \
 ``k_best``: the priority queue at the final iteration, containing the best sequences w.r.t. the objective. \
-``seq_list ``: the sequences along the way of optimization. \
+``seq_list ``: pairs of sequences from improved mutation. \
 ``dist_list``: the distance between every intermediate sequence in ``seq_list`` and ``structure``. \
 ``mfe_list``: a list containing all the MFE solutions found. The order of the list is based on the time when each MFE solution is detected.   \
 ``umfe_list``: a list containing all the uMFE solutions found. The order of the list is based on the time when each uMFE solution is detected.   \
