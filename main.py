@@ -512,7 +512,7 @@ if __name__ == "__main__":
             target = line.strip()
             print(target)
             start_time = time.time()
-            k_best, log, mfe_list, umfe_list, dist_list, ned_best, elapsed_time = samfeo(target, f_obj, args.step, k=args.k, t=args.t, check_mfe=not args.nomfe, sm=not args.nosm) # rna and ensemble defect
+            k_best, log, mfe_list, umfe_list, dist_list, ned_best, seq_list, elapsed_time = samfeo(target, f_obj, args.step, k=args.k, t=args.t, check_mfe=not args.nomfe, sm=not args.nosm) # rna and ensemble defect
             finish_time = time.time()
             rna_best = max(k_best)
             seq = rna_best.seq
@@ -530,14 +530,14 @@ if __name__ == "__main__":
             print(k_best)
             kbest_list = []
             for rna_struct in k_best:
-                obj = 'prob' if args.object == 'pd' else 'ned'
+                obj = 'pd' if args.object == 'pd' else 'ned'
                 # print(f'seq: {rna_struct.seq}, {obj}: {rna_struct.score}')
-                kbest_list.append({'seq': rna_struct.seq, obj: rna_struct.score})
+                kbest_list.append({'seq': rna_struct.seq, obj: str(rna_struct.v)})
             print(' mfe samples:', mfe_list[-10:])
             print('umfe samples:', umfe_list[-10:])
             print('kbest:', k_best)
             print('ned_best:', ned_best)
-            results = {'target': target, 'kbest': kbest_list, 'mfe': mfe_list, 'umfe': umfe_list, 'ned_best': ned_best}
+            results = {'target': target, 'kbest': kbest_list, 'mfe': mfe_list, 'umfe': umfe_list, 'ned_best': ned_best, 'seq_list': seq_list}
             filename = "_".join(["puzzle", target.replace('(', '[').replace(')', ']'), "seed", str(seed_np)]) + ".json"
             timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
             id_random = random.randint(0, int(1E7))
