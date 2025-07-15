@@ -53,10 +53,10 @@ LOG = False
 
 class RNAStructure:
 
-    def __init__(self, seq, score, v=None, v_list=None): # v_list: positional NED, v: objective value, socore: used for priority queue
+    def __init__(self, seq, score, v=None, v_list=None): # v_list: positional NED, v: objective value, score: used for priority queue
         self.seq = seq
         self.score = score
-        self.v = v
+        self.v = v  # value
         self.v_list = v_list
 
     def __gt__(self, other):
@@ -251,7 +251,11 @@ def samfeo(target, f, steps, k, t=1, check_mfe=True, sm=True, freq_print=FREQ_PR
     dist_best = (len(target), None)
     for p in intial_list:
         v_list, v, ss_list = f(p, target) # v_list: positional NED, v: objective value, ss_list: (multiple) MFE structures by subopt of ViennaRNA
-        rna_struct = RNAStructure(seq=p, score=-v, v=v, v_list=v_list)
+        if f == position_ed_ned_mfe:
+            value = 1 - v
+        elif f == position_ed_pd_mfe:
+            value = v
+        rna_struct = RNAStructure(seq=p, score=-v, v=value, v_list=v_list)
         rna_struct.dist = min([struct_dist(target, ss_subopt) for ss_subopt in ss_list]) # ss: secondary structure
         rna_struct.subcount = len(ss_list)
         k_best.append(rna_struct)
@@ -285,8 +289,8 @@ def samfeo(target, f, steps, k, t=1, check_mfe=True, sm=True, freq_print=FREQ_PR
     log_min = [v_min]
     for i in range(steps):
         # sequence selection
-        score_list = [rna_struct.score/t*2 for rna_struct in k_best] # objective values
-        probs_boltzmann_1 = np.exp(score_list)/sum(np.exp(score_list)) # boltzmann distribution
+        score_list = [rna_struct.score / t * 2 for rna_struct in k_best] # (negative) objective values
+        probs_boltzmann_1 = np.exp(score_list) / sum(np.exp(score_list)) # boltzmann distribution
         try:
             p= np.random.choice(k_best, p=probs_boltzmann_1)
         except Exception as e:
@@ -347,7 +351,11 @@ def samfeo(target, f, steps, k, t=1, check_mfe=True, sm=True, freq_print=FREQ_PR
             ned_best = (ned_next, seq_next)
 
         # update priority queue(multi-frontier)
-        rna_struct_next = RNAStructure(seq_next, - v_next, v_next, v_list_next)
+        if f == position_ed_ned_mfe:
+            value_next = 1 - v_next
+        elif f == position_ed_pd_mfe:
+            value_next = v_next
+        rna_struct_next = RNAStructure(seq_next, -v_next, value_next, v_list_next)
 
         if len(k_best) < k:
             heapq.heappush(k_best, rna_struct_next)
@@ -371,9 +379,9 @@ def samfeo(target, f, steps, k, t=1, check_mfe=True, sm=True, freq_print=FREQ_PR
                 print(f"iter: {i+1: 5d}\t value: {v_min: .4e}\t best iter: {iter_min} improve: {improve:.4e}")
 
         # stop if convergency condition is satisfied
-        if f == position_ed_pd_mfe and ( v_min < STOP - 1.0 or (len(log_min)>STAY and v_min - log_min[-STAY] > abs(EPSILON_r*v_min)) ):
+        if f == position_ed_pd_mfe and ( v_min < STOP - 1.0 or (len(log_min) > STAY and v_min - log_min[-STAY] > abs(EPSILON_r * v_min)) ):
             break
-        if f == position_ed_ned_mfe and ( v_min < STOP or (len(log_min)>STAY and v_min - log_min[-STAY] > abs(EPSILON_r*v_min)) ):
+        if f == position_ed_ned_mfe and ( v_min < STOP or (len(log_min) > STAY and v_min - log_min[-STAY] > abs(EPSILON_r * v_min)) ):
             break
     end_time = time.time()  # Record the end time
     elapsed_time = end_time - start_time  # Calculate the elapsed time
@@ -400,11 +408,15 @@ def design(path_txt, name, func, num_step, k, t, check_mfe, sm):
         print(f'target structure {i}, {puzzle_name}:')
         print(target)
         start_time = time.time()
-        k_best, log, mfe_list, umfe_list, dist_best, ned_best,elapsed_time = samfeo(target, func, num_step, k=k, t=t, check_mfe=check_mfe, sm=sm) # rna and ensemble defect
+        k_best, log, mfe_list, umfe_list, dist_best, ned_best, elapsed_time = samfeo(target, func, num_step, k=k, t=t, check_mfe=check_mfe, sm=sm) # rna and ensemble defect
         finish_time = time.time()
         rna_best = max(k_best)
         seq = rna_best.seq
-        obj = 1 - rna_best.score
+        obj = None
+        if func == position_ed_ned_mfe:
+            obj = -rna_best.score
+        elif func == position_ed_pd_mfe:
+            obj = 1 - rna_best.score
         print('RNA sequence: ')
         print(seq)
         print('ensemble objective: ', obj)
@@ -458,7 +470,11 @@ def design_para(path_txt, name, func, num_step, k, t, check_mfe, sm):
 
             rna_best = max(k_best)
             seq = rna_best.seq
-            obj = - rna_best.score
+            obj = None
+            if func == position_ed_ned_mfe:
+                obj = -rna_best.score
+            elif func == position_ed_pd_mfe:
+                obj = 1 - rna_best.score
             print('RNA sequence: ')
             print(seq)
             print('ensemble objective: ', obj)
@@ -497,7 +513,6 @@ if __name__ == "__main__":
     parser.add_argument("--worker_count", type=int, default=10)
     parser.add_argument("--batch_size", type=int, default=20)
 
-
     args = parser.parse_args()
     print('args:')
     print(args)
@@ -523,7 +538,11 @@ if __name__ == "__main__":
             finish_time = time.time()
             rna_best = max(k_best)
             seq = rna_best.seq
-            obj = 1 - rna_best.score
+            obj = None
+            if f_obj == position_ed_ned_mfe:
+                obj = -rna_best.score
+            elif f_obj == position_ed_pd_mfe:
+                obj = 1 - rna_best.score
             print('RNA sequence: ')
             print(seq)
             print('ensemble objective: ', obj)
