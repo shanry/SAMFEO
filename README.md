@@ -90,6 +90,8 @@ The design results will be output as a csv file with the following columns.
 ``mfe_list``: a list containing all the MFE solutions found. The order of the list is based on the time when each MFE solution is detected.   \
 ``umfe_list``: a list containing all the uMFE solutions found. The order of the list is based on the time when each uMFE solution is detected.   \
 ``k_best``: the priority queue at the final iteration. \
+``ned_best``: the best ned value and the corresponding sequence. \
+``dist_best``: the best distance value and the corresponding sequence. \
 ``log``: the objective values at each iteration. \
 ``time``: the total time used to design the input puzzle ``structure``.
 
