@@ -43,7 +43,7 @@ STOP = 0.01
 # EPSILON = 1e-40
 EPSILON_r = 1e-4
 
-MAX_REPEAT =1000
+MAX_REPEAT = 1000
 FREQ_PRINT = 10
 
 WORKER_COUNT = 10                                                                
@@ -66,7 +66,7 @@ class RNAStructure:
         return self.score < other.score
 
     def __eq__(self, other):
-        return  self.seq == other.seq
+        return self.seq == other.seq
 
     def __ge__(self, other):
         return self.score >= other.score
@@ -85,19 +85,19 @@ class RNAStructure:
 
 
 def init_with_pair(t, pos_pairs, pairs_init):
-    rna = list("."*len(t))
+    rna = list("." * len(t))
     assert len(rna) == len(t)
     for i, s in enumerate(t):
-        if s==".":
-            rna[i]='A'
+        if s == ".":
+            rna[i] = 'A'
             if name_pair == 'all':
                 rna[i] = np.random.choice(['A', 'C', 'G', 'U'])
-        elif s=="(":
+        elif s == "(":
             j = pos_pairs[i]
             pair = np.random.choice(pairs_init)
             rna[i] = pair[0]
             rna[j] = pair[1]
-        elif s==")":
+        elif s == ")":
             pass
         else:
             raise ValueError(f'the value of structure at position: {i} is not right: {s}!')
@@ -112,26 +112,26 @@ def init_k(target, pos_pairs, k):
     init_0 = init_with_pair(target, pos_pairs, pair_pool)
     p_list = [init_0]
     # if too few pairs then use 'cggu', however this may never happen
-    if k > len(pair_pool)**(len(pos_pairs)/2) and len(pair_pool)<4:
+    if k > len(pair_pool) ** (len(pos_pairs) / 2) and len(pair_pool) < 4:
         pair_pool = name2pair['cggu']
-    # the max number of intial sequences is: len(pair_pool)**(len(pos_pairs)/2)
-    while len(p_list) < min(k, len(pair_pool)**(len(pos_pairs)/2)):
+    # the max number of intial sequences is: len(pair_pool) ** (len(pos_pairs) / 2)
+    while len(p_list) < min(k, len(pair_pool) ** (len(pos_pairs) / 2)):
         init_i = init_with_pair(target, pos_pairs, pair_pool)
         if init_i not in p_list:
             p_list.append(init_i)
     return p_list
 
 
-def pairs_match(ss): # find the pairs in a secondary structure, return a dictionary
+def pairs_match(ss):  # find the pairs in a secondary structure, return a dictionary
     assert len(ss) > 5
     pairs = dict()
     stack = []
     for i, s in enumerate(ss):
-        if s==".":
+        if s == ".":
             pass
-        elif s=="(":
+        elif s == "(":
             stack.append(i)
-        elif s==")":
+        elif s == ")":
             j = stack.pop()
             assert j < i
             pairs[j] = i
@@ -142,7 +142,7 @@ def pairs_match(ss): # find the pairs in a secondary structure, return a diction
 
 
 def mutate_pair(nuc_i, nuc_j, exclude=False):
-    pair_ij = nuc_i+nuc_j
+    pair_ij = nuc_i + nuc_j
     return np.random.choice(nuc_pair_others[pair_ij]) if exclude else np.random.choice(nuc_pair_all)
 
 def mutate_unpair(nuc_i, exclude=False):
@@ -477,7 +477,6 @@ def design_para(path_txt, name, func, num_step, k, t, check_mfe, sm):
 
 if __name__ == "__main__":
 
-
     parser = argparse.ArgumentParser()
     parser.add_argument("--path", '-p', type=str, default='')
     parser.add_argument("--object", '-o', type=str, default='pd')
@@ -499,7 +498,6 @@ if __name__ == "__main__":
     parser.add_argument("--batch_size", type=int, default=20)
 
 
-
     args = parser.parse_args()
     print('args:')
     print(args)
@@ -507,9 +505,9 @@ if __name__ == "__main__":
     STAY = args.stay
     name_pair = args.init
     name_input = args.path.split("/")[-1].split('.')[0]
-    if args.object == 'ned': # normalized ensemble defect
+    if args.object == 'ned':  # normalized ensemble defect
         f_obj = position_ed_ned_mfe
-    elif args.object == 'pd': # probability defect
+    elif args.object == 'pd':  # probability defect
         f_obj = position_ed_pd_mfe
     else:
         raise ValueError('the objective in not correct!')
@@ -557,7 +555,7 @@ if __name__ == "__main__":
         exit(0)
 
     for i in range(args.repeat):
-        seed_np = 2020+(i+args.start)*2021
+        seed_np = 2020 + (i + args.start) * 2021
         np.random.seed(seed_np)
         suffix = f"{i+args.start}"
         if args.para:
