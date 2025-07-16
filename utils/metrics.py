@@ -1,5 +1,5 @@
-"""This script reads multiple CSV files containing MFE (Minimum Free Energy) data,
-counts the number of MFE and UMFE (Unconstrained Minimum Free Energy) solutions,
+"""This script reads multiple CSV files output from SAMFEO,
+counts the number of solved puzzles / structures by MFE and uMFE (unique Minimum Free Energy) criteria,
 and prints various statistics about the solutions.
 Example usage:
 python metrics.py --path "samfeo_output*.csv" or python metrics.py --path samfeo_output\*.csv
@@ -36,38 +36,38 @@ def count_mfe(df_list):
     matrix_umfe = np.zeros((num_puzzles, len(df_list)), dtype=int)
     for i in range(num_puzzles):
         structure = df_list[0].structure.iloc[i]
-        count_mfe = 0
-        count_umfe = 0
+        count_soved_by_mfe = 0
+        count_soved_by_umfe = 0
         for j, df_one in enumerate(df_list):
             mfe_list = eval(df_one.mfe_list.iloc[i])
             umfe_list = eval(df_one.umfe_list.iloc[i])
             if mfe_list:
-                count_mfe += 1
+                count_soved_by_mfe += 1
                 matrix_mfe[i, j] = 1
             if umfe_list:
-                count_umfe += 1
+                count_soved_by_umfe += 1
                 matrix_umfe[i, j] = 1
 
         data.append(
-            [i, structure, count_mfe, count_umfe, count_mfe > 0, count_umfe > 0]
+            [i, structure, count_soved_by_mfe, count_soved_by_umfe, count_soved_by_mfe > 0, count_soved_by_umfe > 0]
         )
     df_joint = pd.DataFrame(
         data,
         columns=(
             "index",
             "structure",
-            "count_mfe",
-            "count_umfe",
-            "has_mfe",
-            "has_umfe",
+            "count_solved_mfe",
+            "count_solved_umfe",
+            "is_solved_mfe",
+            "is_solved_umfe",
         ),
     )
 
     print()
     print("MFE metrics:")
     print("-------------------------------------")
-    print(f"solved by  mfe: {df_joint.has_mfe.sum()}")
-    print(f"solved by umfe: {df_joint.has_umfe.sum()}")
+    print(f"solved by  mfe: {df_joint.is_solved_mfe.sum()}")
+    print(f"solved by umfe: {df_joint.is_solved_umfe.sum()}")
     print(
         f"  mfe mean and std: {matrix_mfe.sum(axis=0).mean():.1f} {matrix_mfe.sum(axis=0).std():.1f}"
     )
