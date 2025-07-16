@@ -15,6 +15,7 @@ from utils.structure import extract_pairs, struct_dist
 from utils.constants import P1, P2, U1, U2
 
 import multiprocessing
+from multiprocessing import pool
 multiprocessing.set_start_method('fork')
 
 
@@ -436,7 +437,6 @@ def design(path_txt, name, func, num_step, k, t, check_mfe, sm):
 
 # RNA design with multiple processing
 def design_para(path_txt, name, func, num_step, k, t, check_mfe, sm):
-    from multiprocessing import Pool                                                          
     print('BATCH_SIZE:', BATCH_SIZE)                                             
     print('WORKER_COUNT:', WORKER_COUNT)         
     targets = []
@@ -457,11 +457,11 @@ def design_para(path_txt, name, func, num_step, k, t, check_mfe, sm):
             args_map.append((target, func, num_step, k, t, check_mfe, sm, FREQ_PRINT))
         print("args_map:")
         print(args_map)
-        results_pool = pool.map(samfeo_para, args_map)                             
-        pool.close()                                                             
+        results_pool = pool.map(samfeo_para, args_map)
+        pool.close()
         pool.join()
         for j, result in enumerate(results_pool):
-            idx_puzzle = i_batch+j
+            idx_puzzle = i_batch + j
             puzzle_name = f"{name}_{idx_puzzle}"
             target = targets[idx_puzzle]
             print(f'target structure {idx_puzzle}, {puzzle_name}:')
@@ -578,8 +578,8 @@ if __name__ == "__main__":
         np.random.seed(seed_np)
         suffix = f"{i+args.start}"
         if args.para:
-            WORKER_COUNT = args.worker_count                                                              
-            BATCH_SIZE = args.batch_size 
+            BATCH_SIZE = args.batch_size
+            WORKER_COUNT = args.worker_count
             design_para(args.path, name_input, f_obj, args.step, k=args.k, t=args.t, check_mfe=not args.nomfe, sm=not args.nosm)
         else:
             design(args.path, name_input, f_obj, args.step, k=args.k, t=args.t, check_mfe=not args.nomfe, sm=not args.nosm)
