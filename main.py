@@ -15,7 +15,7 @@ from utils.structure import extract_pairs, struct_dist
 from utils.constants import P1, P2, U1, U2
 
 import multiprocessing
-from multiprocessing import pool
+from multiprocessing import Pool
 multiprocessing.set_start_method('fork')
 
 
