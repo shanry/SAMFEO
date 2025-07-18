@@ -22,34 +22,33 @@ Example:
 ```
 $ echo "(((((......)))))" | python main.py --online --step 100
 args:
-Namespace(path='', object='pd', k=10, t=1, step=100, name='', init='cg', repeat=1, start=0, nomfe=False, nosm=False, bp=False, online=True)
-(((((......)))))
+Namespace(path='', object='pd', k=10, t=1, step=100, stay=2000, name='', init='cg', repeat=1, start=0, nomfe=False, nosm=False, bp=False, log=False, online=True, para=False, worker_count=10, batch_size=20)
 (((((......)))))
 seed_np: 2020
 steps: 100, t: 1, k: 10, structured mutation: True, ensemble objective: position_ed_pd_mfe
 name_pair: cg
 pair_pool: ['CG', 'GC']
-0 CGCGCAAAAAAGCGCG:  0.8093,  0.1907
-1 CCGCGAAAAAACGCGG:  0.9173,  0.0827
-2 CCCGGAAAAAACCGGG:  0.9410,  0.0590
-3 GGCCGAAAAAACGGCC:  0.9451,  0.0549
-4 CCCCCAAAAAAGGGGG:  0.9384,  0.0616
-5 GCGGCAAAAAAGCCGC:  0.9739,  0.0261
-6 GCCCCAAAAAAGGGGC:  0.9746,  0.0254
-7 GCGCCAAAAAAGGCGC:  0.9739,  0.0261
-8 GGGGCAAAAAAGCCCC:  0.9746,  0.0254
-9 GCCCGAAAAAACGGGC:  0.9450,  0.0550
-iter:    10	 value:  0.0254	 mfe count:    18	 umfe count: 18	 best iter: 0 improve: 0.00e+00
-iter:    20	 value:  0.0254	 mfe count:    26	 umfe count: 26	 best iter: 0 improve: 0.00e+00
-iter:    30	 value:  0.0241	 mfe count:    35	 umfe count: 35	 best iter: 28 improve: -1.28e-03
-iter:    40	 value:  0.0241	 mfe count:    42	 umfe count: 42	 best iter: 28 improve: 0.00e+00
-iter:    50	 value:  0.0241	 mfe count:    51	 umfe count: 51	 best iter: 28 improve: 0.00e+00
-iter:    60	 value:  0.0241	 mfe count:    59	 umfe count: 59	 best iter: 28 improve: 0.00e+00
-iter:    70	 value:  0.0241	 mfe count:    68	 umfe count: 68	 best iter: 28 improve: 0.00e+00
-iter:    80	 value:  0.0241	 mfe count:    77	 umfe count: 77	 best iter: 28 improve: 0.00e+00
-iter:    90	 value:  0.0241	 mfe count:    85	 umfe count: 85	 best iter: 28 improve: 0.00e+00
-iter:   100	 value:  0.0241	 mfe count:    92	 umfe count: 92	 best iter: 28 improve: 0.00e+00
-RNA sequence:
+0 CGCGCAAAAAAGCGCG:  8.0927e-01
+1 CCGCGAAAAAACGCGG:  9.1725e-01
+2 CCCGGAAAAAACCGGG:  9.4103e-01
+3 GGCCGAAAAAACGGCC:  9.4508e-01
+4 CCCCCAAAAAAGGGGG:  9.3840e-01
+5 GCGGCAAAAAAGCCGC:  9.7389e-01
+6 GCCCCAAAAAAGGGGC:  9.7457e-01
+7 GCGCCAAAAAAGGCGC:  9.7389e-01
+8 GGGGCAAAAAAGCCCC:  9.7455e-01
+9 GCCCGAAAAAACGGGC:  9.4502e-01
+iter:    10      value: -9.7457e-01      mfe count:    18        umfe count: 18  best iter: 0 improve: 0.00e+00
+iter:    20      value: -9.7457e-01      mfe count:    26        umfe count: 26  best iter: 0 improve: 0.00e+00
+iter:    30      value: -9.7585e-01      mfe count:    35        umfe count: 35  best iter: 28 improve: -1.28e-03
+iter:    40      value: -9.7585e-01      mfe count:    42        umfe count: 42  best iter: 28 improve: 0.00e+00
+iter:    50      value: -9.7585e-01      mfe count:    51        umfe count: 51  best iter: 28 improve: 0.00e+00
+iter:    60      value: -9.7585e-01      mfe count:    59        umfe count: 59  best iter: 28 improve: 0.00e+00
+iter:    70      value: -9.7585e-01      mfe count:    68        umfe count: 68  best iter: 28 improve: 0.00e+00
+iter:    80      value: -9.7585e-01      mfe count:    77        umfe count: 77  best iter: 28 improve: 0.00e+00
+iter:    90      value: -9.7585e-01      mfe count:    85        umfe count: 85  best iter: 28 improve: 0.00e+00
+iter:   100      value: -9.7585e-01      mfe count:    92        umfe count: 92  best iter: 28 improve: 0.00e+00
+RNA sequence: 
 GCCCCGAAAAAGGGGC
 ensemble objective:  0.02414993696568135
 (((((......)))))
@@ -59,10 +58,16 @@ count of mfe solutsion: 92
 count of umfe solutions: 92
 [RNAStructure('GGGGCAAAAACGCCCC', 0.9745324428444898), RNAStructure('GGGGCAGAACAGCCCC', 0.9745537982728839), RNAStructure('GGGGCAAAGAAGCCCC', 0.9745522394520901), RNAStructure('GGGGCAGAAAAGCCCC', 0.9745541635522057), RNAStructure('GGCCCAAAAAAGGGCC', 0.974676524461917), RNAStructure('GCCCCAAUAAAGGGGC', 0.9745688330920909), RNAStructure('GCCCCAAAAAAGGGGC', 0.9745692982930593), RNAStructure('GCCCCGAAAAAGGGGC', 0.9758500630343186), RNAStructure('GGGGCAAAAAAGCCCC', 0.9745543077208556), RNAStructure('GGAGCGAAGAAGCUCC', 0.9756107700034071)]
  mfe samples: ['GGGCUCAAGAUGGCCC', 'GCCCUUAAAACGGGGC', 'GCCCAAAAAACUGGGC', 'GGCACAGAAAAGUGCC', 'GCCCUAAUAACAGGGC', 'GGGUGCAAGACCACCC', 'GGGGCAAAGAAGCUUC', 'GGGGCAGAACAGCCCC', 'GGUGCAGAAAAGUGCC', 'GCCCCAAAAGAGGGGC']
+
 umfe samples: ['GGGCUCAAGAUGGCCC', 'GCCCUUAAAACGGGGC', 'GCCCAAAAAACUGGGC', 'GGCACAGAAAAGUGCC', 'GCCCUAAUAACAGGGC', 'GGGUGCAAGACCACCC', 'GGGGCAAAGAAGCUUC', 'GGGGCAGAACAGCCCC', 'GGUGCAGAAAAGUGCC', 'GCCCCAAAAGAGGGGC']
+
 kbest: [RNAStructure('GGGGCAAAAACGCCCC', 0.9745324428444898), RNAStructure('GGGGCAGAACAGCCCC', 0.9745537982728839), RNAStructure('GGGGCAAAGAAGCCCC', 0.9745522394520901), RNAStructure('GGGGCAGAAAAGCCCC', 0.9745541635522057), RNAStructure('GGCCCAAAAAAGGGCC', 0.974676524461917), RNAStructure('GCCCCAAUAAAGGGGC', 0.9745688330920909), RNAStructure('GCCCCAAAAAAGGGGC', 0.9745692982930593), RNAStructure('GCCCCGAAAAAGGGGC', 0.9758500630343186), RNAStructure('GGGGCAAAAAAGCCCC', 0.9745543077208556), RNAStructure('GGAGCGAAGAAGCUCC', 0.9756107700034071)]
+
 ned_best: (0.0030683500152726695, 'GCCCCGAAAAAGGGGC')
-full results are saved in the file: results_20241111104223_9277867.json # results_{timestamp}_{random_id}.json
+
+dist_best: (-2, 'CGCGCAAAAAAGCGCG')  # -2 means the sequence adopt the target structure as its unique MFE structure
+
+full results are saved in the file: results_20250718161920_1975123.json  # results_{timestamp}_{random_id}.json
 ```
 
 ### Batch mode (input a file in which each line is a structure)

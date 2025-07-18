@@ -384,6 +384,7 @@ def samfeo(target, f, steps, k, t=1, check_mfe=True, sm=True, freq_print=FREQ_PR
             break
         if f == position_ed_ned_mfe and ( v_min < STOP or (len(log_min) > STAY and v_min - log_min[-STAY] > abs(EPSILON_r * v_min)) ):
             break
+    ned_best = (float(ned_best[0]), ned_best[1])
     end_time = time.time()  # Record the end time
     elapsed_time = end_time - start_time  # Calculate the elapsed time
     return k_best, log, mfe_list, umfe_list, dist_best, ned_best, elapsed_time
@@ -556,13 +557,14 @@ if __name__ == "__main__":
             print(k_best)
             kbest_list = []
             for rna_struct in k_best:
-                obj = 'prob' if args.object == 'pd' else 'ned'
-                # print(f'seq: {rna_struct.seq}, {obj}: {rna_struct.score}')
-                kbest_list.append({'seq': rna_struct.seq, obj: rna_struct.score})
-            print(' mfe samples:', mfe_list[-10:])
-            print('umfe samples:', umfe_list[-10:])
-            print('kbest:', k_best)
-            print('ned_best:', ned_best)
+                obj_name = 'prob_defect' if args.object == 'pd' else 'normalized_ensemble_defect'
+                obj_value = obj
+                kbest_list.append({'seq': rna_struct.seq, obj_name: obj_value})
+            print(' mfe samples:', mfe_list[-10:], end='\n\n')
+            print('umfe samples:', umfe_list[-10:], end='\n\n')
+            print('kbest:', k_best, end='\n\n')
+            print('ned_best:', ned_best, end='\n\n')
+            print('dist_best:', dist_best, end='\n\n')
             results = {'target': target, 'kbest': kbest_list, 'mfe': mfe_list, 'umfe': umfe_list, 'ned_best': ned_best, 'dist_best': dist_best}
             filename = "_".join(["puzzle", target.replace('(', '[').replace(')', ']'), "seed", str(seed_np)]) + ".json"
             timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
