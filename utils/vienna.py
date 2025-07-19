@@ -7,11 +7,12 @@ from utils.structure import extract_pairs
 
 import RNA
 
-def base_pair_probs(seq, sym=False, scale=True):
+def base_pair_probs(seq, sym=False, scale=True, scale_energy=None):
     fc = RNA.fold_compound(seq)
     if scale:
-        _, mfe = fc.mfe()
-        fc.exp_params_rescale(mfe)
+        if scale_energy is None:
+            _, scale_energy = fc.mfe()
+        fc.exp_params_rescale(scale_energy)
     fc.pf()
     bpp = np.array(fc.bpp())[1:, 1:]
     if sym:
@@ -23,15 +24,18 @@ def base_pair_probs(seq, sym=False, scale=True):
 def ensemble_defect(seq, ss, scale=True):
     fc = RNA.fold_compound(seq)
     if scale:
-        _, mfe = fc.mfe()
-        fc.exp_params_rescale(mfe)
+        energy = fc.eval_structure(ss)
+        fc.exp_params_rescale(energy)
     fc.pf()
     fc.bpp()
     ed = fc.ensemble_defect(ss)
     return ed
 
 def position_defect(seq, ss, scale=True):
-    bpp = base_pair_probs(seq, sym=True, scale=True)
+    scale_energy = None
+    if scale:
+        energy = RNA.fold_compound(seq).eval_structure(ss)
+    bpp = base_pair_probs(seq, sym=True, scale=True, scale_energy=scale_energy)
     pairs = extract_pairs(ss)
     defect_pos = [1 - bpp[i, j] for i, j in enumerate(pairs)]
     return defect_pos
@@ -39,10 +43,10 @@ def position_defect(seq, ss, scale=True):
 
 def position_defect_mfe(seq, ss, scale=True):
     fc = RNA.fold_compound(seq)
+    ss_mfe_list = subopt(seq)['ss_list'] # a list of (mfe, structure) tuples
+    mfe = ss_mfe_list[0][0] # minimum free energy
+    ss_list = [ss_mfe[1] for ss_mfe in ss_mfe_list]
     if scale:
-        ss_mfe_list = subopt(seq)['ss_list']
-        mfe = ss_mfe_list[0][0]
-        ss_list = [ss_mfe[1] for ss_mfe in ss_mfe_list]
         fc.exp_params_rescale(mfe)
     fc.pf()
     bpp = np.array(fc.bpp())[1:, 1:]
@@ -60,8 +64,8 @@ def position_defect_mfe(seq, ss, scale=True):
 def position_ed_pd(seq, ss, scale=True):
     fc = RNA.fold_compound(seq)
     if scale:
-        _, mfe = fc.mfe()
-        fc.exp_params_rescale(mfe)
+        energy = fc.eval_structure(ss)
+        fc.exp_params_rescale(energy)
     fc.pf()
     bpp = np.array(fc.bpp())[1:, 1:]
     sym = True
@@ -78,11 +82,10 @@ def position_ed_pd(seq, ss, scale=True):
 
 def position_ed_pd_mfe(seq, ss, scale=True):
     fc = RNA.fold_compound(seq)
+    ss_mfe_list = subopt(seq)['ss_list']  # a list of (mfe, structure) tuples
+    mfe = ss_mfe_list[0][0]  # minimum free energy
+    ss_list = [ss_mfe[1] for ss_mfe in ss_mfe_list]
     if scale:
-        # ss_mfe, mfe = fc.mfe()
-        ss_mfe_list = subopt(seq)['ss_list']
-        mfe = ss_mfe_list[0][0]
-        ss_list = [ss_mfe[1] for ss_mfe in ss_mfe_list]
         fc.exp_params_rescale(mfe)
     fc.pf()
     bpp = np.array(fc.bpp())[1:, 1:]
