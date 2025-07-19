@@ -65,6 +65,9 @@ class RNAStructure:
         self.v = v  # value
         self.v_list = v_list
 
+    def __len__(self):
+        return len(self.seq)
+
     def __gt__(self, other):
         return self.score > other.score
 
