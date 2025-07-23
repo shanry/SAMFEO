@@ -280,10 +280,10 @@ def samfeo(target, f, steps, k, t=1, check_mfe=True, sm=True, freq_print=FREQ_PR
             p, target
         )  # v_list: positional NED, v: objective value, ss_list: (multiple) MFE structures by subopt of ViennaRNA
         if f == position_ed_ned_mfe:
-            value = 1 - v
+            value = v - 1
         elif f == position_ed_pd_mfe:
             value = v
-        rna_struct = RNAStructure(seq=p, score=-v, v=value, v_list=v_list)
+        rna_struct = RNAStructure(seq=p, score=-value, v=value, v_list=v_list)
         rna_struct.dist = min(
             [struct_dist(target, ss_subopt) for ss_subopt in ss_list]
         )  # ss: secondary structure
@@ -386,7 +386,7 @@ def samfeo(target, f, steps, k, t=1, check_mfe=True, sm=True, freq_print=FREQ_PR
 
         # update priority queue(multi-frontier)
         if f == position_ed_ned_mfe:
-            value_next = 1 - v_next
+            value_next = v_next - 1
         elif f == position_ed_pd_mfe:
             value_next = v_next
         rna_struct_next = RNAStructure(seq_next, -v_next, value_next, v_list_next)
@@ -423,7 +423,7 @@ def samfeo(target, f, steps, k, t=1, check_mfe=True, sm=True, freq_print=FREQ_PR
         ):
             break
         if f == position_ed_ned_mfe and (
-            v_min < STOP
+            v_min < STOP - 1.0
             or (len(log_min) > STAY and v_min - log_min[-STAY] > abs(EPSILON_r * v_min))
         ):
             break
@@ -489,7 +489,7 @@ def design(path_txt, name, func, num_step, k, t, check_mfe, sm):
         seq = rna_best.seq
         obj = None
         if func == position_ed_ned_mfe:
-            obj = -rna_best.score
+            obj = 1 - rna_best.score
         elif func == position_ed_pd_mfe:
             obj = 1 - rna_best.score
         print("RNA sequence: ")
@@ -606,7 +606,7 @@ def design_para(path_txt, name, func, num_step, k, t, check_mfe, sm):
             seq = rna_best.seq
             obj = None
             if func == position_ed_ned_mfe:
-                obj = -rna_best.score
+                obj = 1 - rna_best.score
             elif func == position_ed_pd_mfe:
                 obj = 1 - rna_best.score
             print("RNA sequence: ")
@@ -715,7 +715,7 @@ if __name__ == "__main__":
             seq = rna_best.seq
             obj = None
             if f_obj == position_ed_ned_mfe:
-                obj = -rna_best.score
+                obj = 1 - rna_best.score
             elif f_obj == position_ed_pd_mfe:
                 obj = 1 - rna_best.score
             print("RNA sequence: ")
@@ -736,7 +736,7 @@ if __name__ == "__main__":
                     if args.object == "pd"
                     else "normalized_ensemble_defect"
                 )
-                obj_value = obj
+                obj_value = 1 - rna_struct.score
                 kbest_list.append({"seq": rna_struct.seq, obj_name: obj_value})
             print(" mfe samples:", mfe_list[-10:], end="\n\n")
             print("umfe samples:", umfe_list[-10:], end="\n\n")
