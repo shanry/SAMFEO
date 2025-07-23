@@ -46,6 +46,7 @@ def count_mfe(df_list):
         count_soved_by_umfe = 0
         objective_list = []
         dist_best_list = []
+        ned_best_list = []
         for j, df_one in enumerate(df_list):
             mfe_list = eval(df_one.mfe_list.iloc[i])
             umfe_list = eval(df_one.umfe_list.iloc[i])
@@ -55,8 +56,13 @@ def count_mfe(df_list):
             if umfe_list:
                 count_soved_by_umfe += 1
                 matrix_umfe[i, j] = 1
-            objective_list.append(df_one.objective.iloc[i])
-            dist_best_list.append(df_one.dist_best.iloc[i])
+            objective_list.append((df_one.objective.iloc[i]))
+            dist_best_list.append(eval(df_one.dist_best.iloc[i]))
+            ned_best_list.append(eval(df_one.ned_best.iloc[i]))
+        dist_best, _ = min(dist_best_list)
+        ned_best, _ = min(ned_best_list)
+        if dist_best < 0:
+            dist_best = 0
         data.append(
             [
                 i,
@@ -66,6 +72,8 @@ def count_mfe(df_list):
                 count_soved_by_umfe,
                 count_soved_by_mfe > 0,
                 count_soved_by_umfe > 0,
+                dist_best,
+                ned_best,
             ]
         )
     df_joint = pd.DataFrame(
@@ -78,6 +86,8 @@ def count_mfe(df_list):
             "count_solved_umfe",
             "is_solved_mfe",
             "is_solved_umfe",
+            "dist_best",
+            "ned_best",
         ),
     )
 
@@ -92,9 +102,29 @@ def count_mfe(df_list):
     print(
         f" umfe mean and std: {matrix_umfe.sum(axis=0).mean():.1f} {matrix_umfe.sum(axis=0).std():.1f}"
     )
+    print()
+
+    print("best distance:")
+    print("-------------------------------------")
+    print(f"mean: {df_joint.dist_best.mean():.2f} std: {df_joint.dist_best.std():.2f}")
+    print()
+
+    print("best ned:")
+    print("-------------------------------------")
+    print(f"mean: {df_joint.ned_best.mean():.4f} std: {df_joint.ned_best.std():.4f}")
+    print()
+
     print("Objective statistics:")
     print("-------------------------------------")
-    print(f"objective mean: {df_joint.objective.mean():.2f}")
+    print(f"objective arithmic mean: {df_joint.objective.mean():.4f}")
+    print(f"objective arithmic std: {df_joint.objective.std():.4f}")
+
+    prob_list = 1 - df_joint.objective
+    # geometric mean and std
+    geometric_mean = np.exp(np.log(prob_list).mean())
+    geometric_std = np.exp(np.log(prob_list).std())
+    print(f"objective geometric mean: {geometric_mean:.4f}")
+    print(f"objective geometric std: {geometric_std:.4f}")
 
     # save the joint dataframe to a CSV file
     df_joint.to_csv("mfe_counts.csv", index=False)
@@ -132,6 +162,8 @@ def find_best_distance(df_list):
             y_mfe, d_best = argmin_dist(x, structure)
             assert d_best == dist, f"Distance mismatch: {d_best} != {dist}"
             data.append([i, structure, dist, x, y_mfe])
+        else:
+            data.append([i, structure, dist, x, structure])  # no valid sequence found
     df_joint = pd.DataFrame(data, columns=("index", "y", "dist", "x", "y_mfe"))
     # save the joint dataframe to a CSV file
     df_joint.to_csv("best_distance.csv", index=False)
