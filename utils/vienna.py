@@ -37,7 +37,7 @@ def ensemble_defect(seq, ss, scale=True):
 def position_defect(seq, ss, scale=True):
     scale_energy = None
     if scale:
-        energy = RNA.fold_compound(seq).eval_structure(ss)
+        scale_energy = RNA.fold_compound(seq).eval_structure(ss)
     bpp = base_pair_probs(seq, sym=True, scale=True, scale_energy=scale_energy)
     pairs = extract_pairs(ss)
     defect_pos = [1 - bpp[i, j] for i, j in enumerate(pairs)]
@@ -166,6 +166,7 @@ if __name__ == "__main__":
     pr = prob(rna, ss_mfe)
     subopt_data = subopt(rna)
     defect_pos_2, pr_2 = position_ed_pd(rna, ss_mfe)
+    _, ned, _ = position_ed_ned_mfe(rna, ss_mfe)
     print("rna:", rna)
     print("mfe:", ss_mfe)
     print("prb:", pr)
@@ -174,4 +175,5 @@ if __name__ == "__main__":
     print("Vinenna NED:", defect)
     print("Scratch NED:", sum(defect_pos) / len(defect_pos))
     print("Position ED:", sum(defect_pos_2) / len(defect_pos_2))
+    print("        NED:", ned)
     print("subopt:", subopt_data)
