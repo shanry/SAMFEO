@@ -1,4 +1,13 @@
+"""
+This module provides functions to handle RNA secondary structures,
+including extracting pairs, calculating distances, etc.
+"""
+
+
 def extract_pairs(ss):
+    """Extract pairs from a secondary structure string.
+    Returns a list of indices where each position has the index of its pair, or itself if unpaired.
+    """
     pairs = list(range(len(ss)))
     stack = []
     for i, c in enumerate(ss):
@@ -16,6 +25,9 @@ def extract_pairs(ss):
 
 
 def extract_pairs_list(ss):
+    """Extract pairs from a secondary structure string.
+    Returns a list of tuples where each tuple contains the indices of paired positions.
+    """
     pairs = []
     stack = []
     for i, c in enumerate(ss):
@@ -31,7 +43,10 @@ def extract_pairs_list(ss):
     return pairs
 
 
-def pairs_match(ss):  # find the pairs in a secondary structure, return a dictionary
+def pairs_match(ss):
+    """Extract pairs in a secondary structure string.
+    Returns a dictionary where keys are indices of left/right brackets and values are indices of right/left brackets.
+    """
     assert len(ss) > 5
     pairs = dict()
     stack = []
@@ -71,3 +86,5 @@ if __name__ == "__main__":
     print("pairs:", pairs)
     pairs_list = extract_pairs_list(ss)
     print("pairs_list: ", pairs_list)
+    pairs_dict = pairs_match(ss)
+    print("pairs_dict: ", pairs_dict)

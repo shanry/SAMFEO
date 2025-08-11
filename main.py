@@ -310,7 +310,7 @@ def samfeo(target, f, steps, k, t=1, check_mfe=True, sm=True, freq_print=FREQ_PR
         else:
             dist_list.append(rna_struct.dist)
 
-        if dist_best[1] is None or rna_struct.dist < dist_best[0]:
+        if dist_best[1] is None or rna_struct.dist <= dist_best[0]:
             dist_best = (rna_struct.dist, rna_struct.seq)
 
     # log of lowest objective value at eachs iterations
@@ -376,7 +376,7 @@ def samfeo(target, f, steps, k, t=1, check_mfe=True, sm=True, freq_print=FREQ_PR
             count_umfe += 1
 
         # update dist_best
-        if dist_best[1] is None or dist < dist_best[0]:
+        if dist_best[1] is None or dist <= dist_best[0]:
             dist_best = (dist, seq_next)
 
         # compare with best ned
