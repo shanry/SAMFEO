@@ -299,7 +299,7 @@ def samfeo(target, f, steps, k, t=1, check_mfe=True, sm=True, freq_print=FREQ_PR
     intial_list = init_k(target, pairs, k)
     history = set()
     k_best = []
-    # best_many = []
+    best_many = []
     log = []
     dist_list = []  # deprecated
     mfe_list = []
@@ -312,9 +312,9 @@ def samfeo(target, f, steps, k, t=1, check_mfe=True, sm=True, freq_print=FREQ_PR
             sequence, target
         )  # defect_list: positional NED, objective: objective value, y_mfe_list: (multiple) MFE structures of sequence
         if f == position_ed_ned_mfe:
-            value = objective - 1
+            value = objective - 1. # NED - 1
         elif f == position_ed_pd_mfe:
-            value = objective
+            value = objective  # negative prob.
         rna_struct = RNAStructure(seq=sequence, score=-value, v=value, v_list=defect_list)
         rna_struct.dist = min(
             [struct_dist(target, y_mfe) for y_mfe in y_mfe_list]
@@ -323,18 +323,18 @@ def samfeo(target, f, steps, k, t=1, check_mfe=True, sm=True, freq_print=FREQ_PR
         k_best.append(rna_struct)
         history.add(rna_struct.seq)
         ned_sequence = np.mean(defect_list)
-        # design = Design(sequence, target)
-        # design.dist = rna_struct.dist
-        # design.ensemble_defect_list = defect_list
-        # design.mfe_structures = y_mfe_list
-        # design.ned = ned_sequence
-        # design.score = -objective 
+        design = Design(sequence, target)
+        design.dist = rna_struct.dist
+        design.ensemble_defect_list = defect_list
+        design.mfe_structures = y_mfe_list
+        design.ned = ned_sequence
+        design.score = -objective 
         if f == position_ed_pd_mfe:  # v is negative prob.
             design.prob = -objective
-        # if len(best_many) < args.k2:
-        #     heapq.heappush(best_many, design)
-        # elif design.score > best_many[0].score:  # push to the heap
-        #     heapq.heapreplace(best_many, design)
+        if len(best_many) < args.k2:
+            heapq.heappush(best_many, design)
+        elif design.score > best_many[0].score:  # push to the heap
+            heapq.heapreplace(best_many, design)
         # record the best NED
         if ned_sequence <= ned_best[0]:
             ned_best = (ned_sequence, sequence)
@@ -402,18 +402,18 @@ def samfeo(target, f, steps, k, t=1, check_mfe=True, sm=True, freq_print=FREQ_PR
         defect_list_next, objective_next, y_mfe_list = f(seq_next, target)
         dist = min([struct_dist(target, y_mfe) for y_mfe in y_mfe_list])
 
-        # design = Design(seq_next, target)
-        # design.mfe_structures = y_mfe_list
-        # design.dist = dist
-        # design.ensemble_defect_list = defect_list_next
-        # design.ned = np.mean(defect_list_next)
-        # design.score = -objective_next
-        # if f == position_ed_pd_mfe:  # objective is negative prob
-        #     design.prob = -objective_next
-        # if len(best_many) < args.k2:
-        #     heapq.heappush(best_many, design)
-        # elif design.score > best_many[0].score:  # push to the heap
-        #     heapq.heapreplace(best_many, design)
+        design = Design(seq_next, target)
+        design.mfe_structures = y_mfe_list
+        design.dist = dist
+        design.ensemble_defect_list = defect_list_next
+        design.ned = np.mean(defect_list_next)
+        design.score = -objective_next
+        if f == position_ed_pd_mfe:  # objective is negative prob
+            design.prob = -objective_next
+        if len(best_many) < args.k2:
+            heapq.heappush(best_many, design)
+        elif design.score > best_many[0].score:  # push to the heap
+            heapq.heapreplace(best_many, design)
 
         # mfe and umfe solutions as byproducts
         umfe = False
@@ -443,9 +443,9 @@ def samfeo(target, f, steps, k, t=1, check_mfe=True, sm=True, freq_print=FREQ_PR
 
         # update priority queue(multi-frontier)
         if f == position_ed_ned_mfe:
-            value_next = objective_next - 1
+            value_next = objective_next - 1  # NED - 1
         elif f == position_ed_pd_mfe:
-            value_next = objective_next
+            value_next = objective_next  # negative prob.
         rna_struct_next = RNAStructure(seq_next, -objective_next, value_next, defect_list_next)
 
         if len(k_best) < k:
@@ -487,8 +487,8 @@ def samfeo(target, f, steps, k, t=1, check_mfe=True, sm=True, freq_print=FREQ_PR
     ned_best = (float(ned_best[0]), ned_best[1])
     end_time = time.time()  # Record the end time
     elapsed_time = end_time - start_time  # Calculate the elapsed time
-    # best_many = sorted(best_many, key=lambda x: x.prob, reverse=True)[: args.k2]
-    return k_best, log, mfe_list, umfe_list, dist_best, ned_best, elapsed_time
+    best_many = sorted(best_many, key=lambda x: x.score, reverse=True)[: args.k2]
+    return k_best, log, mfe_list, umfe_list, dist_best, ned_best, elapsed_time, best_many
 
 
 def samfeo_para(args):
@@ -539,7 +539,7 @@ def design(path_txt, name, func, num_step, k, t, check_mfe, sm):
         print(f"target structure {i}, {puzzle_name}:")
         print(target)
         start_time = time.time()
-        k_best, log, mfe_list, umfe_list, dist_best, ned_best, elapsed_time = samfeo(
+        k_best, log, mfe_list, umfe_list, dist_best, ned_best, elapsed_time, best_many = samfeo(
             target, func, num_step, k=k, t=t, check_mfe=check_mfe, sm=sm
         )  # rna and ensemble defect
         finish_time = time.time()
@@ -639,7 +639,7 @@ def design_para(path_txt, name, func, num_step, k, t, check_mfe, sm):
             "mfe_list",
             "umfe_list",
         )
-    filename = f"{name}_{func.__name__}_t{t}_k{k}_step{num_step}_{name_pair}_{suffix}_mfe{check_mfe}_sm{sm}_para_time{int(time.time())}.csv"
+    filename = f"{name}_{func.__name__}_t{t}_k{k}_step{num_step}_{name_pair}_{suffix}_mfe{check_mfe}_sm{sm}_para_time{int(time.time())}.jsonl"
     for i_batch in range(0, len(targets), BATCH_SIZE):
         pool = Pool(WORKER_COUNT)
         args_map = []
@@ -658,7 +658,7 @@ def design_para(path_txt, name, func, num_step, k, t, check_mfe, sm):
             target = targets[idx_puzzle]
             print(f"target structure {idx_puzzle}, {puzzle_name}:")
             print(target)
-            k_best, log, mfe_list, umfe_list, dist_best, ned_best, elapsed_time = result
+            k_best, log, mfe_list, umfe_list, dist_best, ned_best, elapsed_time, best_many = result
 
             rna_best = max(k_best)
             seq = rna_best.seq
@@ -671,47 +671,39 @@ def design_para(path_txt, name, func, num_step, k, t, check_mfe, sm):
             print(seq)
             print("ensemble objective: ", obj)
             print(target)
-            ss_mfe = mfe(seq)[0]
-            dist = struct_dist(target, ss_mfe)
-            print(ss_mfe)
-            print(f"structure distance: {dist}")
+            result_dict = {}
+            result_dict["target"] = target
+            result_dict["kbest"] = [{"seq": rna_struct.seq, "objective": 1 - rna_struct.score} for rna_struct in k_best]
+            result_dict["mfe"] = mfe_list
+            result_dict["umfe"] = umfe_list
+            result_dict["ned_best"] = (float(ned_best[0]), ned_best[1])
+            result_dict["dist_best"] = (int(dist_best[0]), dist_best[1])
+            result_dict["time"] = elapsed_time
+            result_dict["puzzle_name"] = puzzle_name
+            result_dict["final sequence"] = seq
+            result_dict["final objective"] = obj
+            best_list = []
+            for design in best_many:
+                best_list.append(
+                    {
+                        "sequence": design.sequence,
+                        "target": design.structure,
+                        "score": design.score,
+                        "dist": design.dist,
+                        "ned": design.ned,
+                        "prob": design.prob,
+                        "mfe_structures": design.mfe_structures,
+                    }
+                )
+            result_dict["best_list"] = best_list
             if LOG:
-                data.append(
-                    [
-                        puzzle_name,
-                        target,
-                        seq,
-                        obj,
-                        ss_mfe,
-                        dist,
-                        elapsed_time,
-                        log,
-                        k_best,
-                        ned_best,
-                        dist_best,
-                        mfe_list,
-                        umfe_list,
-                    ]
-                )
-            else:
-                data.append(
-                    [
-                        puzzle_name,
-                        target,
-                        seq,
-                        obj,
-                        ss_mfe,
-                        dist,
-                        elapsed_time,
-                        k_best,
-                        ned_best,
-                        dist_best,
-                        mfe_list,
-                        umfe_list,
-                    ]
-                )
-            df = pd.DataFrame(data, columns=cols)
-            df.to_csv(filename)
+                result_dict["log"] = log
+            result_json = json.dumps(result_dict)
+            with open(filename, "a") as f:
+                f.write(result_json + "\n")
+            print(f"results of {puzzle_name} are saved in the file: {filename}")
+    print(f"All results are saved in the file: {filename}")
+
 
 
 if __name__ == "__main__":
@@ -720,7 +712,7 @@ if __name__ == "__main__":
     parser.add_argument("--path", "-p", type=str, default="")
     parser.add_argument("--object", "-o", type=str, default="pd")
     parser.add_argument("--k", type=int, default=10)
-    # parser.add_argument("--k2", type=int, default=10)  # size of best_many
+    parser.add_argument("--k2", type=int, default=10)  # size of best_many
     parser.add_argument("--t", type=float, default=1)
     parser.add_argument("--step", type=int, default=5000)
     parser.add_argument("--stay", type=int, default=2000)
@@ -758,7 +750,7 @@ if __name__ == "__main__":
             target = line.strip()
             print(target)
             start_time = time.time()
-            k_best, log, mfe_list, umfe_list, dist_best, ned_best, elapsed_time = (
+            k_best, log, mfe_list, umfe_list, dist_best, ned_best, elapsed_time, best_many = (
                 samfeo(
                     target,
                     f_obj,
