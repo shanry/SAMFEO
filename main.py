@@ -93,6 +93,37 @@ class RNAStructure:
         return hash(self.seq)
 
 
+class Design:
+
+    def __init__(self, sequence, structure):
+        self.sequence = sequence
+        self.structure = structure
+
+        # mfe structures
+        self.mfe_structures = None
+
+        # RNA attributes with respect to the target structure / motif
+        self.dist = None  # structure distance
+        self.prob = None  # structure probability
+        self.ned = None  # normalized ensemble defect
+        self.ensemble_defect_list = None
+
+        # meaning of score depends on the context
+        self.score = None
+
+    def __str__(self):
+        return f"{self.sequence}\t{self.structure}"
+
+    def __repr__(self):
+        return f"Design('{self.sequence}', '{self.structure}')"
+
+    def __lt__(self, other):
+        return self.score < other.score
+
+    def __gt__(self, other):
+        return self.score > other.score
+
+
 def init_with_pair(t, pos_pairs, pairs_init):
     rna = list("." * len(t))
     assert len(rna) == len(t)
@@ -268,6 +299,7 @@ def samfeo(target, f, steps, k, t=1, check_mfe=True, sm=True, freq_print=FREQ_PR
     intial_list = init_k(target, pairs, k)
     history = set()
     k_best = []
+    # best_many = []
     log = []
     dist_list = []  # deprecated
     mfe_list = []
@@ -275,25 +307,37 @@ def samfeo(target, f, steps, k, t=1, check_mfe=True, sm=True, freq_print=FREQ_PR
     count_umfe = 0
     ned_best = (1, None)
     dist_best = (len(target), None)
-    for p in intial_list:
-        v_list, v, ss_list = f(
-            p, target
-        )  # v_list: positional NED, v: objective value, ss_list: (multiple) MFE structures by subopt of ViennaRNA
+    for sequence in intial_list:
+        defect_list, objective, y_mfe_list = f(
+            sequence, target
+        )  # defect_list: positional NED, objective: objective value, y_mfe_list: (multiple) MFE structures of sequence
         if f == position_ed_ned_mfe:
-            value = v - 1
+            value = objective - 1
         elif f == position_ed_pd_mfe:
-            value = v
-        rna_struct = RNAStructure(seq=p, score=-value, v=value, v_list=v_list)
+            value = objective
+        rna_struct = RNAStructure(seq=sequence, score=-value, v=value, v_list=defect_list)
         rna_struct.dist = min(
-            [struct_dist(target, ss_subopt) for ss_subopt in ss_list]
+            [struct_dist(target, y_mfe) for y_mfe in y_mfe_list]
         )  # ss: secondary structure
-        rna_struct.subcount = len(ss_list)
+        rna_struct.subcount = len(y_mfe_list)
         k_best.append(rna_struct)
         history.add(rna_struct.seq)
+        ned_sequence = np.mean(defect_list)
+        # design = Design(sequence, target)
+        # design.dist = rna_struct.dist
+        # design.ensemble_defect_list = defect_list
+        # design.mfe_structures = y_mfe_list
+        # design.ned = ned_sequence
+        # design.score = -objective 
+        if f == position_ed_pd_mfe:  # v is negative prob.
+            design.prob = -objective
+        # if len(best_many) < args.k2:
+        #     heapq.heappush(best_many, design)
+        # elif design.score > best_many[0].score:  # push to the heap
+        #     heapq.heapreplace(best_many, design)
         # record the best NED
-        ned_p = np.mean(v_list)
-        if ned_p <= ned_best[0]:
-            ned_best = (ned_p, p)
+        if ned_sequence <= ned_best[0]:
+            ned_best = (ned_sequence, sequence)
 
     # priority queue
     heapq.heapify(k_best)
@@ -355,19 +399,32 @@ def samfeo(target, f, steps, k, t=1, check_mfe=True, sm=True, freq_print=FREQ_PR
         history.add(seq_next)
 
         # evaluation new sequence
-        v_list_next, v_next, ss_list = f(seq_next, target)
+        defect_list_next, objective_next, y_mfe_list = f(seq_next, target)
+        dist = min([struct_dist(target, y_mfe) for y_mfe in y_mfe_list])
+
+        # design = Design(seq_next, target)
+        # design.mfe_structures = y_mfe_list
+        # design.dist = dist
+        # design.ensemble_defect_list = defect_list_next
+        # design.ned = np.mean(defect_list_next)
+        # design.score = -objective_next
+        # if f == position_ed_pd_mfe:  # objective is negative prob
+        #     design.prob = -objective_next
+        # if len(best_many) < args.k2:
+        #     heapq.heappush(best_many, design)
+        # elif design.score > best_many[0].score:  # push to the heap
+        #     heapq.heapreplace(best_many, design)
 
         # mfe and umfe solutions as byproducts
         umfe = False
         if check_mfe:
-            dist = min([struct_dist(target, ss_subopt) for ss_subopt in ss_list])
             if dist == 0:
                 mfe_list.append(seq_next)
-                if len(ss_list) == 1:
+                if len(y_mfe_list) == 1:
                     umfe = True
                     umfe_list.append(seq_next)
-        else:
-            dist = len(target)  # set a dummy dist
+        # else:
+        #     dist = len(target)  # set a dummy dist
         if not umfe:
             dist_list.append(dist)
         else:
@@ -380,28 +437,28 @@ def samfeo(target, f, steps, k, t=1, check_mfe=True, sm=True, freq_print=FREQ_PR
             dist_best = (dist, seq_next)
 
         # compare with best ned
-        ned_next = np.mean(v_list_next)
+        ned_next = np.mean(defect_list_next)
         if ned_next <= ned_best[0]:
             ned_best = (ned_next, seq_next)
 
         # update priority queue(multi-frontier)
         if f == position_ed_ned_mfe:
-            value_next = v_next - 1
+            value_next = objective_next - 1
         elif f == position_ed_pd_mfe:
-            value_next = v_next
-        rna_struct_next = RNAStructure(seq_next, -v_next, value_next, v_list_next)
+            value_next = objective_next
+        rna_struct_next = RNAStructure(seq_next, -objective_next, value_next, defect_list_next)
 
         if len(k_best) < k:
             heapq.heappush(k_best, rna_struct_next)
         elif rna_struct_next > k_best[0]:
             heapq.heappushpop(k_best, rna_struct_next)
-        if v_next <= v_min:
+        if objective_next <= v_min:
             iter_min = i
 
         # update log
-        v_min = min(v_min, v_next)
+        v_min = min(v_min, objective_next)
         log_min.append(v_min)
-        log.append(v_next)
+        log.append(objective_next)
         assert len(dist_list) == len(log)
 
         # output information during iteration
@@ -430,6 +487,7 @@ def samfeo(target, f, steps, k, t=1, check_mfe=True, sm=True, freq_print=FREQ_PR
     ned_best = (float(ned_best[0]), ned_best[1])
     end_time = time.time()  # Record the end time
     elapsed_time = end_time - start_time  # Calculate the elapsed time
+    # best_many = sorted(best_many, key=lambda x: x.prob, reverse=True)[: args.k2]
     return k_best, log, mfe_list, umfe_list, dist_best, ned_best, elapsed_time
 
 
@@ -662,6 +720,7 @@ if __name__ == "__main__":
     parser.add_argument("--path", "-p", type=str, default="")
     parser.add_argument("--object", "-o", type=str, default="pd")
     parser.add_argument("--k", type=int, default=10)
+    # parser.add_argument("--k2", type=int, default=10)  # size of best_many
     parser.add_argument("--t", type=float, default=1)
     parser.add_argument("--step", type=int, default=5000)
     parser.add_argument("--stay", type=int, default=2000)
