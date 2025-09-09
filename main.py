@@ -733,9 +733,9 @@ if __name__ == "__main__":
     parser.add_argument("--bp", action="store_true")
     parser.add_argument("--log", action="store_true")
     parser.add_argument("--online", action="store_true")
-    parser.add_argument("--para", action="store_true")
-    parser.add_argument("--worker_count", type=int, default=10)
-    parser.add_argument("--batch_size", type=int, default=20)
+    # parser.add_argument("--para", action="store_true")
+    parser.add_argument("--worker_count", type=int, default=1)
+    parser.add_argument("--batch_size", type=int, default=1)
 
     args = parser.parse_args()
     print("args:")
@@ -829,25 +829,15 @@ if __name__ == "__main__":
             print(f"full results are saved in the file: {filename}")
         exit(0)
 
-    for i in range(args.repeat):
-        seed_np = 2020 + (i + args.start) * 2021
-        np.random.seed(seed_np)
-        suffix = f"{i+args.start}"
-        if args.para:
+    if args.path:
+        for i in range(args.repeat):
+            seed_np = 2020 + (i + args.start) * 2021
+            np.random.seed(seed_np)
+            suffix = f"{i+args.start}"
             BATCH_SIZE = args.batch_size
             WORKER_COUNT = args.worker_count
+            assert WORKER_COUNT <= BATCH_SIZE, "worker_count should be less than batch_size!"
             design_para(
-                args.path,
-                name_input,
-                f_obj,
-                args.step,
-                k=args.k,
-                t=args.t,
-                check_mfe=not args.nomfe,
-                sm=not args.nosm,
-            )
-        else:
-            design(
                 args.path,
                 name_input,
                 f_obj,
