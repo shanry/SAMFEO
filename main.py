@@ -674,8 +674,8 @@ def design_para(path_txt, name, func, num_step, k, t, check_mfe, sm):
             result_dict = {}
             result_dict["target"] = target
             result_dict["kbest"] = [{"seq": rna_struct.seq, "objective": 1 - rna_struct.score} for rna_struct in k_best]
-            result_dict["mfe"] = mfe_list
-            result_dict["umfe"] = umfe_list
+            result_dict["mfe_list"] = mfe_list
+            result_dict["umfe_list"] = umfe_list
             result_dict["ned_best"] = (float(ned_best[0]), ned_best[1])
             result_dict["dist_best"] = (int(dist_best[0]), dist_best[1])
             result_dict["time"] = elapsed_time
