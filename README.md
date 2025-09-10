@@ -77,6 +77,7 @@ full results are saved in the file: results_20250718161920_1975123.json  # resul
 - `--online`: Enable online mode (read a single structure from stdin).
 - `--t`: Sampling temperature T. Higher T increases randomness; lower T is greedier. Default: 1.
 - `--k`: Frontier (priority queue) size. Larger values explore more candidates per iteration at higher cost. Default: 10.
+- `--k2`: The size of the list contaning $k2$ best designs from all steps.
 - `--object`: Optimization objective: `pd` (probability defect) or `ned` (normalized ensemble defect). Default: `pd`.
 - `--init`: Sequence initialization method: `cg` (constraint-guided/targeted) or `all` (uniform random). Default: `cg`.
 - `--nosm`: Disable structured mutation (ablates structure-aware grouped changes).
@@ -88,16 +89,16 @@ full results are saved in the file: results_20250718161920_1975123.json  # resul
 - `--worker_count`: Number of CPU workers for batch mode; must be ≤ `batch_size`.
 
 ### Batch mode output format
-The design results will be output as a csv file with the following columns.
+The design results will be output as a jsonl file, where each line is a record with the following fields.
 
-- ``structure``: the input puzzle (target secondary structure). 
-- ``objective``: the best (lowest) objective value achived during optimization. 
-- ``rna``: the sequence with the best objective during optimization. 
-- ``mfe``: the MFE structure of ``rna``, given by ViennaRNA folding engine. 
-- ``dist``: the distance between ``mfe`` and ``structure``. 
+- ``target``: the input puzzle (target secondary structure). 
+- ``puzzle_name``: the name of the input puzzle.
+- ``final sequence``: the sequence with the best objective during optimization. 
+- ``final objective``: the best (lowest) objective value achived during optimization. 
 - ``mfe_list``: a list containing all the MFE solutions found. The order of the list is based on the time when each MFE solution is detected. 
 - ``umfe_list``: a list containing all the uMFE solutions found. The order of the list is based on the time when each uMFE solution is detected.
-- ``k_best``: the priority queue at the final iteration.
+- ``k_best``: the $k$ best designs in the priority queue at the final iteration.
+- ``best_list``: the $k2$ best designs during the all steps, each design has detailed metrics inculuding probability, ned, structural distance, mfe structures, etc.
 - ``ned_best``: the best ned value and the corresponding sequence.
 - ``dist_best``: the best distance value and the corresponding sequence.
 - ``log``: the objective values at each iteration.
