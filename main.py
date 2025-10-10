@@ -156,7 +156,7 @@ def init_k(target, pos_pairs, k):
     # if too few pairs then use 'cggu', however this may never happen
     if k > len(pair_pool) ** (len(pos_pairs) / 2) and len(pair_pool) < 4:
         pair_pool = name2pair["cggu"]
-    # the max number of intial sequences is: len(pair_pool) ** (len(pos_pairs) / 2)
+    # the max number of initial sequences is: len(pair_pool) ** (len(pos_pairs) / 2)
     while len(p_list) < min(k, len(pair_pool) ** (len(pos_pairs) / 2)):
         init_i = init_with_pair(target, pos_pairs, pair_pool)
         if init_i not in p_list:
@@ -296,7 +296,7 @@ def samfeo(target, f, steps, k, t=1, check_mfe=True, sm=True, freq_print=FREQ_PR
 
     # targeted initilization
     pairs = pairs_match(target)
-    intial_list = init_k(target, pairs, k)
+    initial_list = init_k(target, pairs, k)
     history = set()
     k_best = []
     # best_many = []
@@ -307,7 +307,7 @@ def samfeo(target, f, steps, k, t=1, check_mfe=True, sm=True, freq_print=FREQ_PR
     count_umfe = 0
     ned_best = (1, None)
     dist_best = (len(target), None)
-    for sequence in intial_list:
+    for sequence in initial_list:
         defect_list, objective, y_mfe_list = f(
             sequence, target
         )  # defect_list: positional NED, objective: objective value, y_mfe_list: (multiple) MFE structures of sequence
@@ -329,8 +329,8 @@ def samfeo(target, f, steps, k, t=1, check_mfe=True, sm=True, freq_print=FREQ_PR
         # design.mfe_structures = y_mfe_list
         # design.ned = ned_sequence
         # design.score = -objective 
-        if f == position_ed_pd_mfe:  # v is negative prob.
-            design.prob = -objective
+        # if f == position_ed_pd_mfe:  # v is negative prob.
+        #     design.prob = -objective
         # if len(best_many) < args.k2:
         #     heapq.heappush(best_many, design)
         # elif design.score > best_many[0].score:  # push to the heap
@@ -446,7 +446,7 @@ def samfeo(target, f, steps, k, t=1, check_mfe=True, sm=True, freq_print=FREQ_PR
             value_next = objective_next - 1
         elif f == position_ed_pd_mfe:
             value_next = objective_next
-        rna_struct_next = RNAStructure(seq_next, -objective_next, value_next, defect_list_next)
+        rna_struct_next = RNAStructure(seq_next, -value_next, value_next, defect_list_next)
 
         if len(k_best) < k:
             heapq.heappush(k_best, rna_struct_next)
