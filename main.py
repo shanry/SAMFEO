@@ -736,8 +736,7 @@ if __name__ == "__main__":
                     if args.object == "pd"
                     else "normalized_ensemble_defect"
                 )
-                obj_value = obj
-                kbest_list.append({"seq": rna_struct.seq, obj_name: obj_value})
+                kbest_list.append({"seq": rna_struct.seq, obj_name: obj})
             print(" mfe samples:", mfe_list[-10:], end="\n\n")
             print("umfe samples:", umfe_list[-10:], end="\n\n")
             print("kbest:", k_best, end="\n\n")
@@ -750,18 +749,8 @@ if __name__ == "__main__":
                 "umfe": umfe_list,
                 "ned_best": ned_best,
                 "dist_best": dist_best,
+                "time": elapsed_time
             }
-            filename = (
-                "_".join(
-                    [
-                        "puzzle",
-                        target.replace("(", "[").replace(")", "]"),
-                        "seed",
-                        str(seed_np),
-                    ]
-                )
-                + ".json"
-            )
             timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
             id_random = random.randint(0, int(1e7))
             filename = f"results_{timestamp}_{id_random}.json"
