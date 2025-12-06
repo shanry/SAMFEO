@@ -72,33 +72,36 @@ full results are saved in the file: results_20250718161920_1975123.json  # resul
 
 ### Batch mode (input a file in which each line is a structure)
 ``python main.py --t 1 --k 10 --object pd --path data/eterna/eterna100.txt # plus other design options`` 
-### Design options
-``--online`` turn on online mode. \
-``--t`` set the sampling temprature(T in the paper). The default value is 1. \
-``--k`` set the size of frontier(priority queue). The default value is 10. \
-``--object`` set objective, the value can be ``pd`` or ``ned``, which stand for probability defect and ensemble defect respectively. The default value is ``pd``. \
-``--init`` the sequence initilization method, and the value can be ``cg`` or ``all``, which stand for targeted initilization and random initilization respectively. The default value is ``cg``. \
-``--nosm`` if used, the structured mutation will be ablated.  \
-``--nomfe`` if used, "mfe as product" will be ablated, i.e., only the sequence with the best score will be used as the designed sequence.
 
-``--step`` set maximum number of iterations. The default value is 5000. \
-``--repeat`` set the number of repeated experiments. The default value is 1. (only for batch mode)\
-``--start`` set the starting index for naming the output file. The default value is 0. (only for batch mode)
+### Design options
+- `--online`: Enable online mode (read a single structure from stdin).
+- `--t`: Sampling temperature T. Higher T increases randomness; lower T is greedier. Default: 1.
+- `--k`: Frontier (priority queue) size. Larger values explore more candidates per iteration at higher cost. Default: 10.
+- `--object`: Optimization objective: `pd` (probability defect) or `ned` (normalized ensemble defect). Default: `pd`.
+- `--init`: Sequence initialization method: `cg` (constraint-guided/targeted) or `all` (uniform random). Default: `cg`.
+- `--nosm`: Disable structured mutation (ablates structure-aware grouped changes).
+- `--nomfe`: Disable “MFE as product”; only the single best-scoring sequence is kept as the designed output.
+- `--step`: Maximum number of iterations. Default: 5000.
+- `--repeat`: Number of repeated runs (batch mode only). Default: 1.
+- `--start`: Starting index for naming output files (batch mode only). Default: 0.
+- `--batch_size`: Number of structures processed concurrently in batch mode.
+- `--worker_count`: Number of CPU workers for batch mode; must be ≤ `batch_size`.
+
 ### Batch mode output format
 The design results will be output as a csv file with the following columns.
 
-``structure``: the input puzzle (target secondary structure). \
-``objective``: the best (lowest) objective value achived during optimization. \
-``rna``: the sequence with the best objective during optimization. \
-``mfe``: the MFE structure of ``rna``, given by ViennaRNA folding engine. \
-``dist``: the distance between ``mfe`` and ``structure``. \
-``mfe_list``: a list containing all the MFE solutions found. The order of the list is based on the time when each MFE solution is detected.   \
-``umfe_list``: a list containing all the uMFE solutions found. The order of the list is based on the time when each uMFE solution is detected.   \
-``k_best``: the priority queue at the final iteration. \
-``ned_best``: the best ned value and the corresponding sequence. \
-``dist_best``: the best distance value and the corresponding sequence. \
-``log``: the objective values at each iteration. \
-``time``: the total time used to design the input puzzle ``structure``.
+- ``structure``: the input puzzle (target secondary structure). 
+- ``objective``: the best (lowest) objective value achived during optimization. 
+- ``rna``: the sequence with the best objective during optimization. 
+- ``mfe``: the MFE structure of ``rna``, given by ViennaRNA folding engine. 
+- ``dist``: the distance between ``mfe`` and ``structure``. 
+- ``mfe_list``: a list containing all the MFE solutions found. The order of the list is based on the time when each MFE solution is detected. 
+- ``umfe_list``: a list containing all the uMFE solutions found. The order of the list is based on the time when each uMFE solution is detected.
+- ``k_best``: the priority queue at the final iteration.
+- ``ned_best``: the best ned value and the corresponding sequence.
+- ``dist_best``: the best distance value and the corresponding sequence.
+- ``log``: the objective values at each iteration.
+- ``time``: the total time used to design the input puzzle ``structure``.
 
 ## Solved puzzles
 see [data/results/eterna_samfeo.csv](data/results/eterna_samfeo.csv)
