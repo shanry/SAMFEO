@@ -1,19 +1,27 @@
 # SAMFEO
-Implementation of the RNA design methd proposed in the paper (ISMB 2023):
+Implementation of the RNA design methd of the paper (ISMB 2023):
 
 [1] Zhou, T., Dai, N., Li, S., Ward, M., Mathews, D.H. and Huang, L., 2023. RNA design via structure-aware multifrontier ensemble optimization. Bioinformatics, 39(Supplement_1), pp.i563-i571.
 
-## Dependency
-python3 \
-pip install requirements.txt
+## Installation
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/shanry/SAMFEO
+    cd SAMFEO
+    git checkout samfeo_prec
+    ```
+2.  **Install dependencies:**
+    This project is developed using Python 3.11, and should also work for other Python versions.
+    ```bash
+    pip install -r requirements.txt
+    ```
 
-## Structured Mutation
-<p align="center">
-<img src="figs/sm.png" width="400">
-</p>
-Diagrams of Structured Mutation. Paired positions are connected by blue dashed lines and each of the rounded rectangles or triangles represents a specific local structure. Diagram a,b,c show structured mutation with paired positions(shaded nucleotides pair). Diagram d,e,f show structured mutation with unpaired positions(shaded nucleotides). When a shaded position is selected for mutation, all the positions within the same local structure would be mutated simultaneously.
+## Testing
+```bash
+pytest main.py -s
+```
 
-## RNA Design Interface
+## Quick Start
 ### Online mode (input single structure each time)
 ``python main.py --online # plus other design options`` 
 
@@ -102,20 +110,3 @@ The design results will be output as a csv file with the following columns.
 - ``dist_best``: the best distance value and the corresponding sequence.
 - ``log``: the objective values at each iteration.
 - ``time``: the total time used to design the input puzzle ``structure``.
-
-## Solved puzzles
-see [data/results/eterna_samfeo.csv](data/results/eterna_samfeo.csv)
-
-### Ensemble metrics
-<img src="figs/inter.png" width="600">
-
-## Base Pair Probability plot
-Blue denotes pairs in the target structure and Red denotes predicted pairs not in the target structure. The darkness of the curves indicates pairing probability. The following figs show the design results for the puzzle "Runner" by NEMO and SAMFEO respectively. We can see that there are some red curves in the plot of NEMO, which means those undesired pairs are more likely to apear in the ensemble of sequence designed by NEMO.
-### NEMO
-<img src="figs/eterna61_nemo.png" width="800">
-
-### SAMFEO
-<img src="figs/eterna61_samfeo.png" width="800">
-
-## 16S Design
-![alt text](figs/long_design.png)
