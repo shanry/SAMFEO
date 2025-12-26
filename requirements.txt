@@ -1,4 +1,4 @@
-numpy>=1.23,<2.0
-pandas>=1.4,<2.0
-ViennaRNA>=2.6,<3.0
+numpy>=1.23
+pandas>=1.4
+ViennaRNA>=2.6
 pytest>=9.0
