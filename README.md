@@ -10,7 +10,6 @@ The main branch is under active development and is continuously updated to impro
     ```bash
     git clone https://github.com/shanry/SAMFEO
     cd SAMFEO
-    git checkout samfeo_prec
     ```
 2.  **Install dependencies:**
     This project is developed using Python 3.11, and should also work for other Python versions.
