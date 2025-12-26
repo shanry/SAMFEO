@@ -6,6 +6,8 @@ import random
 import json
 import heapq
 import argparse
+import multiprocessing
+from multiprocessing import Pool
 
 import numpy as np
 import pandas as pd
@@ -13,9 +15,6 @@ import pandas as pd
 from utils.vienna import position_ed_pd_mfe, position_ed_ned_mfe, mfe
 from utils.structure import extract_pairs, struct_dist
 from utils.constants import P1, P2, U1, U2
-
-import multiprocessing
-from multiprocessing import Pool
 
 multiprocessing.set_start_method("fork")
 
@@ -26,9 +25,7 @@ name2pair = {
     "cgau": ["CG", "GC", "AU", "UA"],
     "all": ["CG", "GC", "AU", "UA", "GU", "UG"],
 }
-
 nuc_others = {"A": "CGU", "C": "AGU", "U": "ACG", "G": "ACU"}
-
 nuc_pair_others = {
     "AU": ["UA", "CG", "GC", "UG", "GU"],
     "UA": ["AU", "CG", "GC", "UG", "GU"],
@@ -37,7 +34,6 @@ nuc_pair_others = {
     "GU": ["AU", "UA", "CG", "GC", "UG"],
     "UG": ["AU", "UA", "CG", "GC", "GU"],
 }
-
 nuc_all = ["A", "C", "G", "U"]
 nuc_pair_all = ["AU", "UA", "CG", "GC", "UG", "GU"]
 
@@ -45,13 +41,10 @@ STAY = 2000
 STOP = 0.01
 # EPSILON = 1e-40
 EPSILON_r = 1e-4
-
 MAX_REPEAT = 1000
 FREQ_PRINT = 10
-
 WORKER_COUNT = 10
 BATCH_SIZE = 20
-
 LOG = False
 
 
@@ -714,6 +707,50 @@ def design_para(path_txt, name, func, num_step, k, t, check_mfe, sm):
             df.to_csv(filename)
 
 
+def test_design():
+    # Prepare minimal global args/objective configuration when imported under pytest
+    from types import SimpleNamespace
+    global args, objective_name, f_obj, name_pair
+    if 'args' not in globals():
+        args = SimpleNamespace(
+            object="pd",
+            k=10,
+            t=1,
+            nomfe=False,
+            nosm=False,
+            stay=2000,
+            init="cg",
+            log=False,
+            step=100,
+            start=0
+        )
+        global name_pair, stop, seed_np, STAY
+        STAY = args.stay
+        name_pair = args.init
+        seed_np = 2020 + args.start * 2021
+        f_obj = position_ed_pd_mfe if args.object == "pd" else position_ed_ned_mfe
+
+    y = "(((((......)))))"
+    print("test structure:", y)
+    k_best, log, mfe_list, umfe_list, dist_best, ned_best, elapsed_time = samfeo(
+        y,
+        f_obj,
+        args.step,
+        k=args.k,
+        t=args.t,
+        check_mfe=True,
+        sm=True,
+    )
+    seq_best = max(k_best).seq
+    print("best:", max(k_best))
+    print("mfe_list:", mfe_list[:5])
+    print("umfe_list:", umfe_list[:5])
+    print("dist_best:", dist_best)
+    print("ned_best:", ned_best)
+
+    assert seq_best == "GCCCCGAAAAAGGGGC"
+
+
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
@@ -730,7 +767,6 @@ if __name__ == "__main__":
     parser.add_argument("--start", type=int, default=0)
     parser.add_argument("--nomfe", action="store_true")
     parser.add_argument("--nosm", action="store_true")
-    parser.add_argument("--bp", action="store_true")
     parser.add_argument("--log", action="store_true")
     parser.add_argument("--online", action="store_true")
     # parser.add_argument("--para", action="store_true")
@@ -796,9 +832,9 @@ if __name__ == "__main__":
                     else "normalized_ensemble_defect"
                 )
                 kbest_list.append({"seq": rna_struct.seq, obj_name: obj})
-            print(" mfe samples:", mfe_list[-10:], end="\n\n")
-            print("umfe samples:", umfe_list[-10:], end="\n\n")
-            print("kbest:", k_best, end="\n\n")
+            print(" mfe samples:", mfe_list[-5:], end="\n\n")
+            print("umfe samples:", umfe_list[-5:], end="\n\n")
+            print("best:", max(k_best), end="\n\n")
             print("ned_best:", ned_best, end="\n\n")
             print("dist_best:", dist_best, end="\n\n")
             results = {
