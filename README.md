@@ -79,8 +79,11 @@ dist_best: (-2, 'CGCGCAAAAAAGCGCG')  # -2 means the sequence adopt the target st
 full results are saved in the file: results_20250718161920_1975123.json  # results_{timestamp}_{random_id}.json
 ```
 
-### Batch mode (input a file in which each line is a structure)
-``python main.py --t 1 --k 10 --object pd --path data/eterna/eterna100.txt # plus other design options`` 
+### Batch mode (input file with one structure per line)
+``python main.py --t 1 --k 10 --object pd --path data/eterna/eterna100.txt  # add --batch_size 50 --worker_count 20 for multiprocessing speedups``
+
+### Replicate reported results (5 repeats)
+``python main.py --t 1 --k 10 --object pd --path data/eterna/eterna100.txt --repeat 5  # add --batch_size 50 --worker_count 20 for multiprocessing speedups``
 
 ### Design options
 - `--online`: Enable online mode (read a single structure from stdin).
@@ -108,6 +111,7 @@ The design results will be output as a csv file with the following columns.
 - ``umfe_list``: a list containing all the uMFE solutions found. The order of the list is based on the time when each uMFE solution is detected.
 - ``k_best``: the priority queue at the final iteration.
 - ``ned_best``: the best ned value and the corresponding sequence.
+- ``prob_best``: the best probability value and the corresponding sequence.
 - ``dist_best``: the best distance value and the corresponding sequence.
 - ``log``: the objective values at each iteration.
 - ``time``: the total time used to design the input puzzle ``structure``.
