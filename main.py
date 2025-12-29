@@ -51,12 +51,11 @@ LOG = False
 class RNAStructure:
 
     def __init__(
-        self, seq, score, v=None, v_list=None
-    ):  # v_list: positional NED, v: objective value, score: used for priority queue
+        self, seq, score, defect_list=None
+    ):  # defect_list: positional NED, score: used for priority queue
         self.seq = seq
-        self.score = score
-        self.v = v  # value
-        self.v_list = v_list
+        self.score = score  # the greater the score, the better the design quality
+        self.defect_list = defect_list
 
     def __len__(self):
         return len(self.seq)
@@ -84,37 +83,6 @@ class RNAStructure:
 
     def __hash__(self):
         return hash(self.seq)
-
-
-class Design:
-
-    def __init__(self, sequence, structure):
-        self.sequence = sequence
-        self.structure = structure
-
-        # mfe structures
-        self.mfe_structures = None
-
-        # RNA attributes with respect to the target structure / motif
-        self.dist = None  # structure distance
-        self.prob = None  # structure probability
-        self.ned = None  # normalized ensemble defect
-        self.ensemble_defect_list = None
-
-        # meaning of score depends on the context
-        self.score = None
-
-    def __str__(self):
-        return f"{self.sequence}\t{self.structure}"
-
-    def __repr__(self):
-        return f"Design('{self.sequence}', '{self.structure}')"
-
-    def __lt__(self, other):
-        return self.score < other.score
-
-    def __gt__(self, other):
-        return self.score > other.score
 
 
 def init_with_pair(t, pos_pairs, pairs_init):
@@ -196,9 +164,9 @@ def mutate_unpair(nuc_i, exclude=False):
 
 
 # traditional mutation
-def mutate_tradition(seq, pairs, v, v_list, T, pairs_dg=None):
-    v_list = [v / T for v in v_list]
-    probs = np.exp(v_list) / sum(np.exp(v_list))
+def mutate_tradition(seq, pairs, defect_list, T, pairs_dg=None):
+    defect_list = [entry / T for entry in defect_list]
+    probs = np.exp(defect_list) / sum(np.exp(defect_list))
     index = np.random.choice(list(range(len(seq))), p=probs)
     seq_next = [nuc for nuc in seq]
     if index in pairs:
@@ -216,9 +184,9 @@ def mutate_tradition(seq, pairs, v, v_list, T, pairs_dg=None):
 
 
 # structured mutation
-def mutate_structured(seq, pairs, v, v_list, T):
-    v_list = [v / T for v in v_list]
-    probs = np.exp(v_list) / sum(np.exp(v_list))
+def mutate_structured(seq, pairs, defect_list, T):
+    defect_list = [entry / T for entry in defect_list]
+    probs = np.exp(defect_list) / sum(np.exp(defect_list))
     index = np.random.choice(list(range(len(seq))), p=probs)
     pairs_mt = []
     unpairs_mt = []
@@ -274,9 +242,9 @@ def mutate_structured(seq, pairs, v, v_list, T):
     return "".join(nuc_list)
 
 
-def samfeo(target, f, steps, k, t=1, check_mfe=True, sm=True, freq_print=FREQ_PRINT):
+def samfeo(target, steps, k, t=1, check_mfe=True, sm=True, freq_print=FREQ_PRINT):
     start_time = time.time()
-    global seed_np
+    global seed_np, objective_name
     np.random.seed(seed_np)
     print(f"seed_np: {seed_np}")
     if sm:
@@ -284,7 +252,7 @@ def samfeo(target, f, steps, k, t=1, check_mfe=True, sm=True, freq_print=FREQ_PR
     else:
         mutate = mutate_tradition
     print(
-        f"steps: {steps}, t: {t}, k: {k}, structured mutation: {sm}, ensemble objective: {f.__name__}"
+        f"steps: {steps}, t: {t}, k: {k}, structured mutation: {sm}, objective name: {objective_name}"
     )
 
     # targeted initilization
@@ -299,38 +267,28 @@ def samfeo(target, f, steps, k, t=1, check_mfe=True, sm=True, freq_print=FREQ_PR
     umfe_list = []
     count_umfe = 0
     ned_best = (1, None)
+    prob_best = (0, None)
     dist_best = (len(target), None)
     for sequence in initial_list:
-        defect_list, objective, y_mfe_list = f(
+        defect_list, negative_prob, y_mfe_list = position_ed_pd_mfe(
             sequence, target
         )  # defect_list: positional NED, objective: objective value, y_mfe_list: (multiple) MFE structures of sequence
-        if f == position_ed_ned_mfe:
-            value = objective - 1
-        elif f == position_ed_pd_mfe:
-            value = objective
-        rna_struct = RNAStructure(seq=sequence, score=-value, v=value, v_list=defect_list)
+        ned = np.mean(defect_list)
+        if objective_name == "ensemble_defect":
+            objective_value = ned - 1
+        elif objective_name == "probability_defect":
+            objective_value = negative_prob  # tricky: objective is negative probability instead of 1 - probability to avoid float underflow
+        rna_struct = RNAStructure(seq=sequence, score=-objective_value, defect_list=defect_list) # take negative objective as score because the greater the socre, the better the design quality
         rna_struct.dist = min(
             [struct_dist(target, y_mfe) for y_mfe in y_mfe_list]
         )  # ss: secondary structure
         rna_struct.subcount = len(y_mfe_list)
         k_best.append(rna_struct)
         history.add(rna_struct.seq)
-        ned_sequence = np.mean(defect_list)
-        # design = Design(sequence, target)
-        # design.dist = rna_struct.dist
-        # design.ensemble_defect_list = defect_list
-        # design.mfe_structures = y_mfe_list
-        # design.ned = ned_sequence
-        # design.score = -objective 
-        # if f == position_ed_pd_mfe:  # v is negative prob.
-        #     design.prob = -objective
-        # if len(best_many) < args.k2:
-        #     heapq.heappush(best_many, design)
-        # elif design.score > best_many[0].score:  # push to the heap
-        #     heapq.heapreplace(best_many, design)
-        # record the best NED
-        if ned_sequence <= ned_best[0]:
-            ned_best = (ned_sequence, sequence)
+        if ned <= ned_best[0]:
+            ned_best = (ned, sequence)
+        if -negative_prob >= prob_best[0]:
+            prob_best = (-negative_prob, sequence)
 
     # priority queue
     heapq.heapify(k_best)
@@ -369,7 +327,7 @@ def samfeo(target, f, steps, k, t=1, check_mfe=True, sm=True, freq_print=FREQ_PR
             p = np.random.choice(k_best)
 
         # position sampling and mutation
-        seq_next = mutate(p.seq, pairs, p.v, p.v_list, t)
+        seq_next = mutate(p.seq, pairs, p.defect_list, t)
         num_repeat = 0
         while seq_next in history:
             num_repeat += 1
@@ -385,28 +343,16 @@ def samfeo(target, f, steps, k, t=1, check_mfe=True, sm=True, freq_print=FREQ_PR
                 print(target)
                 print("score_list", score_list)
                 raise e
-            seq_next = mutate(p.seq, pairs, p.v, p.v_list, t)
+            seq_next = mutate(p.seq, pairs, p.defect_list, t)
         if num_repeat > len(target) * MAX_REPEAT:
             print(f"num_repeat: {num_repeat} > {len(target)*MAX_REPEAT}")
             break
         history.add(seq_next)
 
         # evaluation new sequence
-        defect_list_next, objective_next, y_mfe_list = f(seq_next, target)
+        defect_list_next, negative_prob_next, y_mfe_list = position_ed_pd_mfe(seq_next, target)
+        ned_next = np.mean(defect_list_next)
         dist = min([struct_dist(target, y_mfe) for y_mfe in y_mfe_list])
-
-        # design = Design(seq_next, target)
-        # design.mfe_structures = y_mfe_list
-        # design.dist = dist
-        # design.ensemble_defect_list = defect_list_next
-        # design.ned = np.mean(defect_list_next)
-        # design.score = -objective_next
-        # if f == position_ed_pd_mfe:  # objective is negative prob
-        #     design.prob = -objective_next
-        # if len(best_many) < args.k2:
-        #     heapq.heappush(best_many, design)
-        # elif design.score > best_many[0].score:  # push to the heap
-        #     heapq.heapreplace(best_many, design)
 
         # mfe and umfe solutions as byproducts
         umfe = False
@@ -430,28 +376,29 @@ def samfeo(target, f, steps, k, t=1, check_mfe=True, sm=True, freq_print=FREQ_PR
             dist_best = (dist, seq_next)
 
         # compare with best ned
-        ned_next = np.mean(defect_list_next)
         if ned_next <= ned_best[0]:
             ned_best = (ned_next, seq_next)
+        if -negative_prob_next >= prob_best[0]:
+            prob_best = (-negative_prob_next, seq_next)
 
         # update priority queue(multi-frontier)
-        if f == position_ed_ned_mfe:
-            value_next = objective_next - 1
-        elif f == position_ed_pd_mfe:
-            value_next = objective_next
-        rna_struct_next = RNAStructure(seq_next, -value_next, value_next, defect_list_next)
+        if objective_name == "ensemble_defect":
+            objective_value_next = ned_next - 1
+        elif objective_name == "probability_defect":
+            objective_value_next = negative_prob_next
+        rna_struct_next = RNAStructure(seq_next, -objective_value_next, defect_list_next)
 
         if len(k_best) < k:
             heapq.heappush(k_best, rna_struct_next)
         elif rna_struct_next > k_best[0]:
             heapq.heappushpop(k_best, rna_struct_next)
-        if objective_next <= v_min:
+        if objective_value_next <= v_min:
             iter_min = i
 
         # update log
-        v_min = min(v_min, objective_next)
+        v_min = min(v_min, objective_value_next)
         log_min.append(v_min)
-        log.append(objective_next)
+        log.append(objective_value_next)
         assert len(dist_list) == len(log)
 
         # output information during iteration
@@ -467,26 +414,18 @@ def samfeo(target, f, steps, k, t=1, check_mfe=True, sm=True, freq_print=FREQ_PR
                 )
 
         # stop if convergency condition is satisfied
-        if f == position_ed_pd_mfe and (
-            v_min < STOP - 1.0
-            or (len(log_min) > STAY and v_min - log_min[-STAY] > abs(EPSILON_r * v_min))
-        ):
-            break
-        if f == position_ed_ned_mfe and (
-            v_min < STOP - 1.0
-            or (len(log_min) > STAY and v_min - log_min[-STAY] > abs(EPSILON_r * v_min))
-        ):
+        if v_min < STOP - 1.0 or (len(log_min) > STAY and v_min - log_min[-STAY] > abs(EPSILON_r * v_min)):
             break
     ned_best = (float(ned_best[0]), ned_best[1])
     end_time = time.time()  # Record the end time
     elapsed_time = end_time - start_time  # Calculate the elapsed time
     # best_many = sorted(best_many, key=lambda x: x.prob, reverse=True)[: args.k2]
-    return k_best, log, mfe_list, umfe_list, dist_best, ned_best, elapsed_time
+    return k_best, log, mfe_list, umfe_list, dist_best, ned_best, prob_best, elapsed_time
 
 
 def samfeo_para(args):
-    target, f, steps, k, t, check_mfe, sm, freq_print = args
-    return samfeo(target, f, steps, k, t, check_mfe, sm, freq_print)
+    target, steps, k, t, check_mfe, sm, freq_print = args
+    return samfeo(target, steps, k, t, check_mfe, sm, freq_print)
 
 
 # RNA design in batch
@@ -508,6 +447,7 @@ def design(path_txt, name, func, num_step, k, t, check_mfe, sm):
         "mfe_list",
         "umfe_list",
         "ned_best",
+        "prob_best",
         "dist_best",
     )
     if LOG:
@@ -524,6 +464,7 @@ def design(path_txt, name, func, num_step, k, t, check_mfe, sm):
             "mfe_list",
             "umfe_list",
             "ned_best",
+            "prob_best",
             "dist_best",
         )
     filename = f"{name}_{func.__name__}_t{t}_k{k}_step{num_step}_{name_pair}_{suffix}_mfe{check_mfe}_sm{sm}_time{int(time.time())}.csv"
@@ -532,8 +473,8 @@ def design(path_txt, name, func, num_step, k, t, check_mfe, sm):
         print(f"target structure {i}, {puzzle_name}:")
         print(target)
         start_time = time.time()
-        k_best, log, mfe_list, umfe_list, dist_best, ned_best, elapsed_time = samfeo(
-            target, func, num_step, k=k, t=t, check_mfe=check_mfe, sm=sm
+        k_best, log, mfe_list, umfe_list, dist_best, ned_best, prob_best, elapsed_time = samfeo(
+            target, num_step, k=k, t=t, check_mfe=check_mfe, sm=sm
         )  # rna and ensemble defect
         finish_time = time.time()
         rna_best = max(k_best)
@@ -566,6 +507,7 @@ def design(path_txt, name, func, num_step, k, t, check_mfe, sm):
                     mfe_list,
                     umfe_list,
                     ned_best,
+                    prob_best,
                     dist_best,
                 ]
             )
@@ -583,6 +525,7 @@ def design(path_txt, name, func, num_step, k, t, check_mfe, sm):
                     mfe_list,
                     umfe_list,
                     ned_best,
+                    prob_best,
                     dist_best,
                 ]
             )
@@ -592,7 +535,7 @@ def design(path_txt, name, func, num_step, k, t, check_mfe, sm):
 
 
 # RNA design with multiple processing
-def design_para(path_txt, name, func, num_step, k, t, check_mfe, sm):
+def design_para(path_txt, name, num_step, k, t, check_mfe, sm):
     print("BATCH_SIZE:", BATCH_SIZE)
     print("WORKER_COUNT:", WORKER_COUNT)
     targets = []
@@ -613,6 +556,7 @@ def design_para(path_txt, name, func, num_step, k, t, check_mfe, sm):
             "log",
             "k_best",
             "ned_best",
+            "prob_best",
             "dist_best",
             "mfe_list",
             "umfe_list",
@@ -628,18 +572,19 @@ def design_para(path_txt, name, func, num_step, k, t, check_mfe, sm):
             "time",
             "k_best",
             "ned_best",
+            "prob_best",
             "dist_best",
             "mfe_list",
             "umfe_list",
         )
-    filename = f"{name}_{func.__name__}_t{t}_k{k}_step{num_step}_{name_pair}_{suffix}_mfe{check_mfe}_sm{sm}_para_time{int(time.time())}.csv"
+    filename = f"{name}_{objective_name}_t{t}_k{k}_step{num_step}_{name_pair}_{suffix}_mfe{check_mfe}_sm{sm}_para_time{int(time.time())}.csv"
     for i_batch in range(0, len(targets), BATCH_SIZE):
         pool = Pool(WORKER_COUNT)
         args_map = []
         for j, target in enumerate(
             targets[i_batch : min(i_batch + BATCH_SIZE, len(targets))]
         ):
-            args_map.append((target, func, num_step, k, t, check_mfe, sm, FREQ_PRINT))
+            args_map.append((target, num_step, k, t, check_mfe, sm, FREQ_PRINT))
         print("args_map:")
         print(args_map)
         results_pool = pool.map(samfeo_para, args_map)
@@ -651,18 +596,15 @@ def design_para(path_txt, name, func, num_step, k, t, check_mfe, sm):
             target = targets[idx_puzzle]
             print(f"target structure {idx_puzzle}, {puzzle_name}:")
             print(target)
-            k_best, log, mfe_list, umfe_list, dist_best, ned_best, elapsed_time = result
+            k_best, log, mfe_list, umfe_list, dist_best, ned_best, prob_best, elapsed_time = result
+            # k_best, log, mfe_list, umfe_list, dist_best, ned_best, prob_best, elapsed_time
 
             rna_best = max(k_best)
             seq = rna_best.seq
-            obj = None
-            if func == position_ed_ned_mfe:
-                obj = 1 - rna_best.score
-            elif func == position_ed_pd_mfe:
-                obj = 1 - rna_best.score
+            objective_value = 1 - rna_best.score
             print("RNA sequence: ")
             print(seq)
-            print("ensemble objective: ", obj)
+            print("ensemble objective: ", objective_value)
             print(target)
             ss_mfe = mfe(seq)[0]
             dist = struct_dist(target, ss_mfe)
@@ -674,13 +616,14 @@ def design_para(path_txt, name, func, num_step, k, t, check_mfe, sm):
                         puzzle_name,
                         target,
                         seq,
-                        obj,
+                        objective_value,
                         ss_mfe,
                         dist,
                         elapsed_time,
                         log,
                         k_best,
                         ned_best,
+                        prob_best,
                         dist_best,
                         mfe_list,
                         umfe_list,
@@ -692,12 +635,13 @@ def design_para(path_txt, name, func, num_step, k, t, check_mfe, sm):
                         puzzle_name,
                         target,
                         seq,
-                        obj,
+                        objective_value,
                         ss_mfe,
                         dist,
                         elapsed_time,
                         k_best,
                         ned_best,
+                        prob_best,
                         dist_best,
                         mfe_list,
                         umfe_list,
@@ -705,6 +649,7 @@ def design_para(path_txt, name, func, num_step, k, t, check_mfe, sm):
                 )
             df = pd.DataFrame(data, columns=cols)
             df.to_csv(filename)
+    print(f"Design results are saved in the file: {filename}")
 
 
 def test_design():
@@ -728,25 +673,27 @@ def test_design():
         STAY = args.stay
         name_pair = args.init
         seed_np = 2020 + args.start * 2021
-        f_obj = position_ed_pd_mfe if args.object == "pd" else position_ed_ned_mfe
+        objective_name = "probability_defect"
 
     y = "(((((......)))))"
     print("test structure:", y)
-    k_best, log, mfe_list, umfe_list, dist_best, ned_best, elapsed_time = samfeo(
+    k_best, log, mfe_list, umfe_list, dist_best, ned_best, prob_best, elapsed_time = samfeo(
         y,
-        f_obj,
         args.step,
         k=args.k,
         t=args.t,
         check_mfe=True,
         sm=True,
     )
+    best_dist = max(dist_best[0], 0)  # -2 represent unique MFE, set to 0 for reporting the real distance
+    dist_best = (best_dist, dist_best[1])
     seq_best = max(k_best).seq
     print("best:", max(k_best))
     print("mfe_list:", mfe_list[:5])
     print("umfe_list:", umfe_list[:5])
     print("dist_best:", dist_best)
     print("ned_best:", ned_best)
+    print("prob_best:", prob_best)
 
     assert seq_best == "GCCCCGAAAAAGGGGC"
 
@@ -776,14 +723,14 @@ if __name__ == "__main__":
     args = parser.parse_args()
     print("args:")
     print(args)
-    global name_pair, stop, seed_np
+    global name_pair, stop, seed_np, objective_name
     STAY = args.stay
     name_pair = args.init
     name_input = args.path.split("/")[-1].split(".")[0]
     if args.object == "ned":  # normalized ensemble defect
-        f_obj = position_ed_ned_mfe
+        objective_name = "ensemble_defect"
     elif args.object == "pd":  # probability defect
-        f_obj = position_ed_pd_mfe
+        objective_name = "probability_defect"
     else:
         raise ValueError("the objective in not correct!")
     LOG = args.log
@@ -794,10 +741,9 @@ if __name__ == "__main__":
             target = line.strip()
             print(target)
             start_time = time.time()
-            k_best, log, mfe_list, umfe_list, dist_best, ned_best, elapsed_time = (
+            k_best, log, mfe_list, umfe_list, dist_best, ned_best, prob_best, elapsed_time = (
                 samfeo(
                     target,
-                    f_obj,
                     args.step,
                     k=args.k,
                     t=args.t,
@@ -807,15 +753,13 @@ if __name__ == "__main__":
             )  # rna and ensemble defect
             finish_time = time.time()
             rna_best = max(k_best)
+            best_dist = max(dist_best[0], 0)  # -2 represent unique MFE, set to 0 for reporting the real distance
+            dist_best = (best_dist, dist_best[1])
             seq = rna_best.seq
-            obj = None
-            if f_obj == position_ed_ned_mfe:
-                obj = 1 - rna_best.score
-            elif f_obj == position_ed_pd_mfe:
-                obj = 1 - rna_best.score
+            objective_value = 1 - rna_best.score
             print("RNA sequence: ")
             print(seq)
-            print("ensemble objective: ", obj)
+            print("ensemble objective: ", objective_value)
             print(target)
             ss_mfe = mfe(seq)[0]
             dist = struct_dist(target, ss_mfe)
@@ -826,16 +770,12 @@ if __name__ == "__main__":
             print(k_best)
             kbest_list = []
             for rna_struct in k_best:
-                obj_name = (
-                    "prob_defect"
-                    if args.object == "pd"
-                    else "normalized_ensemble_defect"
-                )
-                kbest_list.append({"seq": rna_struct.seq, obj_name: obj})
+                kbest_list.append({"seq": rna_struct.seq, objective_name: objective_value})
             print(" mfe samples:", mfe_list[-5:], end="\n\n")
             print("umfe samples:", umfe_list[-5:], end="\n\n")
             print("best:", max(k_best), end="\n\n")
             print("ned_best:", ned_best, end="\n\n")
+            print("prob_best:", prob_best, end="\n\n")
             print("dist_best:", dist_best, end="\n\n")
             results = {
                 "target": target,
@@ -843,6 +783,7 @@ if __name__ == "__main__":
                 "mfe": mfe_list,
                 "umfe": umfe_list,
                 "ned_best": ned_best,
+                "prob_best": prob_best,
                 "dist_best": dist_best,
                 "time": elapsed_time
             }
@@ -865,7 +806,6 @@ if __name__ == "__main__":
             design_para(
                 args.path,
                 name_input,
-                f_obj,
                 args.step,
                 k=args.k,
                 t=args.t,

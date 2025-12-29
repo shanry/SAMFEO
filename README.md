@@ -3,12 +3,13 @@ Implementation of the RNA design methd of the paper (ISMB 2023):
 
 [1] Zhou, T., Dai, N., Li, S., Ward, M., Mathews, D.H. and Huang, L., 2023. RNA design via structure-aware multifrontier ensemble optimization. Bioinformatics, 39(Supplement_1), pp.i563-i571.
 
+The main branch is under active development and is continuously updated to improve numerical precision, code readability, and functionality. The reference implementation used for ISMB 2023 is preserved in the `ismb2023` branch: https://github.com/shanry/SAMFEO/tree/ismb2023
+
 ## Installation
 1.  **Clone the repository:**
     ```bash
     git clone https://github.com/shanry/SAMFEO
     cd SAMFEO
-    git checkout samfeo_prec
     ```
 2.  **Install dependencies:**
     This project is developed using Python 3.11, and should also work for other Python versions.
@@ -30,10 +31,10 @@ Example:
 ```
 $ echo "(((((......)))))" | python main.py --online --step 100
 args:
-Namespace(path='', object='pd', k=10, t=1, step=100, stay=2000, name='', init='cg', repeat=1, start=0, nomfe=False, nosm=False, bp=False, log=False, online=True, para=False, worker_count=10, batch_size=20)
+Namespace(path='', object='pd', k=10, t=1, step=100, stay=2000, name='', init='cg', repeat=1, start=0, nomfe=False, nosm=False, log=False, online=True, worker_count=1, batch_size=1)
 (((((......)))))
 seed_np: 2020
-steps: 100, t: 1, k: 10, structured mutation: True, ensemble objective: position_ed_pd_mfe
+steps: 100, t: 1, k: 10, structured mutation: True, objective name: probability_defect
 name_pair: cg
 pair_pool: ['CG', 'GC']
 0 CGCGCAAAAAAGCGCG:  8.0927e-01
@@ -65,21 +66,26 @@ structure distance: 0
 count of mfe solutsion: 92
 count of umfe solutions: 92
 [RNAStructure('GGGGCAAAAACGCCCC', 0.9745324428444898), RNAStructure('GGGGCAGAACAGCCCC', 0.9745537982728839), RNAStructure('GGGGCAAAGAAGCCCC', 0.9745522394520901), RNAStructure('GGGGCAGAAAAGCCCC', 0.9745541635522057), RNAStructure('GGCCCAAAAAAGGGCC', 0.974676524461917), RNAStructure('GCCCCAAUAAAGGGGC', 0.9745688330920909), RNAStructure('GCCCCAAAAAAGGGGC', 0.9745692982930593), RNAStructure('GCCCCGAAAAAGGGGC', 0.9758500630343186), RNAStructure('GGGGCAAAAAAGCCCC', 0.9745543077208556), RNAStructure('GGAGCGAAGAAGCUCC', 0.9756107700034071)]
- mfe samples: ['GGGCUCAAGAUGGCCC', 'GCCCUUAAAACGGGGC', 'GCCCAAAAAACUGGGC', 'GGCACAGAAAAGUGCC', 'GCCCUAAUAACAGGGC', 'GGGUGCAAGACCACCC', 'GGGGCAAAGAAGCUUC', 'GGGGCAGAACAGCCCC', 'GGUGCAGAAAAGUGCC', 'GCCCCAAAAGAGGGGC']
+ mfe samples: ['GGGUGCAAGACCACCC', 'GGGGCAAAGAAGCUUC', 'GGGGCAGAACAGCCCC', 'GGUGCAGAAAAGUGCC', 'GCCCCAAAAGAGGGGC']
 
-umfe samples: ['GGGCUCAAGAUGGCCC', 'GCCCUUAAAACGGGGC', 'GCCCAAAAAACUGGGC', 'GGCACAGAAAAGUGCC', 'GCCCUAAUAACAGGGC', 'GGGUGCAAGACCACCC', 'GGGGCAAAGAAGCUUC', 'GGGGCAGAACAGCCCC', 'GGUGCAGAAAAGUGCC', 'GCCCCAAAAGAGGGGC']
+umfe samples: ['GGGUGCAAGACCACCC', 'GGGGCAAAGAAGCUUC', 'GGGGCAGAACAGCCCC', 'GGUGCAGAAAAGUGCC', 'GCCCCAAAAGAGGGGC']
 
-kbest: [RNAStructure('GGGGCAAAAACGCCCC', 0.9745324428444898), RNAStructure('GGGGCAGAACAGCCCC', 0.9745537982728839), RNAStructure('GGGGCAAAGAAGCCCC', 0.9745522394520901), RNAStructure('GGGGCAGAAAAGCCCC', 0.9745541635522057), RNAStructure('GGCCCAAAAAAGGGCC', 0.974676524461917), RNAStructure('GCCCCAAUAAAGGGGC', 0.9745688330920909), RNAStructure('GCCCCAAAAAAGGGGC', 0.9745692982930593), RNAStructure('GCCCCGAAAAAGGGGC', 0.9758500630343186), RNAStructure('GGGGCAAAAAAGCCCC', 0.9745543077208556), RNAStructure('GGAGCGAAGAAGCUCC', 0.9756107700034071)]
+best: GCCCCGAAAAAGGGGC:  9.7585e-01
 
 ned_best: (0.0030683500152726695, 'GCCCCGAAAAAGGGGC')
 
-dist_best: (-2, 'CGCGCAAAAAAGCGCG')  # -2 means the sequence adopt the target structure as its unique MFE structure
+prob_best: (0.9758500630343186, 'GCCCCGAAAAAGGGGC')
+
+dist_best: (0, 'GCCCCAAAAGAGGGGC')
 
 full results are saved in the file: results_20250718161920_1975123.json  # results_{timestamp}_{random_id}.json
 ```
 
-### Batch mode (input a file in which each line is a structure)
-``python main.py --t 1 --k 10 --object pd --path data/eterna/eterna100.txt # plus other design options`` 
+### Batch mode (input file with one structure per line)
+``python main.py --t 1 --k 10 --object pd --path data/eterna/eterna100.txt  # add --batch_size 50 --worker_count 20 for multiprocessing speedups``
+
+### Replicate reported results (5 repeats)
+``python main.py --t 1 --k 10 --object pd --path data/eterna/eterna100.txt --repeat 5  # add --batch_size 50 --worker_count 20 for multiprocessing speedups``
 
 ### Design options
 - `--online`: Enable online mode (read a single structure from stdin).
@@ -107,6 +113,7 @@ The design results will be output as a csv file with the following columns.
 - ``umfe_list``: a list containing all the uMFE solutions found. The order of the list is based on the time when each uMFE solution is detected.
 - ``k_best``: the priority queue at the final iteration.
 - ``ned_best``: the best ned value and the corresponding sequence.
+- ``prob_best``: the best probability value and the corresponding sequence.
 - ``dist_best``: the best distance value and the corresponding sequence.
 - ``log``: the objective values at each iteration.
 - ``time``: the total time used to design the input puzzle ``structure``.
