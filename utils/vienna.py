@@ -1,9 +1,6 @@
-import os
 import sys
 import numpy as np
 from utils.structure import extract_pairs
-
-# sys.path.append(os.environ.get('VIENNAPATH')) # deprecated due to the python package of ViennaRNA
 
 import RNA
 
@@ -47,10 +44,10 @@ def position_defect(seq, ss, scale=True):
 def position_defect_mfe(seq, ss, scale=True):
     fc = RNA.fold_compound(seq)
     ss_mfe_list = subopt(seq)["ss_list"]  # a list of (mfe, structure) tuples
-    mfe = ss_mfe_list[0][0]  # minimum free energy
+    mfe_energy = ss_mfe_list[0][0]  # minimum free energy
     ss_list = [ss_mfe[1] for ss_mfe in ss_mfe_list]
     if scale:
-        fc.exp_params_rescale(mfe)
+        fc.exp_params_rescale(mfe_energy)
     fc.pf()
     bpp = np.array(fc.bpp())[1:, 1:]
     sym = True
@@ -86,10 +83,10 @@ def position_ed_pd(seq, ss, scale=True):
 def position_ed_pd_mfe(seq, ss, scale=True):
     fc = RNA.fold_compound(seq)
     ss_mfe_list = subopt(seq)["ss_list"]  # a list of (mfe, structure) tuples
-    mfe = ss_mfe_list[0][0]  # minimum free energy
+    mfe_energy = ss_mfe_list[0][0]  # minimum free energy
     ss_list = [ss_mfe[1] for ss_mfe in ss_mfe_list]
     if scale:
-        fc.exp_params_rescale(mfe)
+        fc.exp_params_rescale(mfe_energy)
     fc.pf()
     bpp = np.array(fc.bpp())[1:, 1:]
     sym = True
@@ -124,8 +121,8 @@ def mfe(seq):
 def prob(seq, ss, scale=True):
     fc = RNA.fold_compound(seq)
     if scale:
-        _, mfe = fc.mfe()
-        fc.exp_params_rescale(mfe)
+        _, mfe_energy = fc.mfe()
+        fc.exp_params_rescale(mfe_energy)
     fc.pf()
     pr = fc.pr_structure(ss)
     return pr
@@ -137,13 +134,9 @@ def prob_defect(seq, ss):
 
 # Print a subopt result as FASTA record
 def print_subopt_result(structure, energy, data):
-    ss_list = []
-    if not structure == None:
-        # print(">subopt {:d}".format(data['counter']))
-        # print("{}\n{} [{:6.2f}]".format(data['sequence'], structure, energy))
+    if structure is not None:
         data["ss_list"].append((energy, structure))
-        # increase structure counter
-        data["counter"] = data["counter"] + 1
+        data["counter"] += 1
 
 
 def subopt(seq, e=0):
@@ -172,7 +165,7 @@ if __name__ == "__main__":
     print("prb:", pr)
     print("pr2:", pr_2)
     print("bpp:", bpp)
-    print("Vinenna NED:", defect)
+    print("Vienna NED:", defect)
     print("Scratch NED:", sum(defect_pos) / len(defect_pos))
     print("Position ED:", sum(defect_pos_2) / len(defect_pos_2))
     print("        NED:", ned)

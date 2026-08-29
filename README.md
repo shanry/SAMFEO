@@ -1,31 +1,37 @@
 # SAMFEO
-Implementation of the RNA design methd of the paper (ISMB 2023):
+
+Implementation of the RNA design method from the paper (ISMB 2023):
 
 [1] Zhou, T., Dai, N., Li, S., Ward, M., Mathews, D.H. and Huang, L., 2023. RNA design via structure-aware multifrontier ensemble optimization. Bioinformatics, 39(Supplement_1), pp.i563-i571.
 
 The main branch is under active development and is continuously updated to improve numerical precision, code readability, and functionality. The reference implementation used for ISMB 2023 is preserved in the `ismb2023` branch: https://github.com/shanry/SAMFEO/tree/ismb2023
 
 ## Installation
+
 1.  **Clone the repository:**
     ```bash
     git clone https://github.com/shanry/SAMFEO
     cd SAMFEO
     ```
 2.  **Install dependencies:**
-    This project is developed using Python 3.11, and should also work for other Python versions.
+    This project is developed using Python 3.11, and should also work with other Python versions.
     ```bash
     pip install -r requirements.txt
     ```
 
 ## Testing
+
 ```bash
 pytest main.py -s
 ```
 
 ## Quick Start
-### Online mode (input single structure each time)
-``python main.py --online # plus other design options`` 
 
+### Online mode (input a single structure at a time)
+
+```bash
+python main.py --online  # plus other design options
+```
 
 Example:
 ```
@@ -63,7 +69,7 @@ ensemble objective:  0.02414993696568135
 (((((......)))))
 (((((......)))))
 structure distance: 0
-count of mfe solutsion: 92
+count of mfe solutions: 92
 count of umfe solutions: 92
 [RNAStructure('GGGGCAAAAACGCCCC', 0.9745324428444898), RNAStructure('GGGGCAGAACAGCCCC', 0.9745537982728839), RNAStructure('GGGGCAAAGAAGCCCC', 0.9745522394520901), RNAStructure('GGGGCAGAAAAGCCCC', 0.9745541635522057), RNAStructure('GGCCCAAAAAAGGGCC', 0.974676524461917), RNAStructure('GCCCCAAUAAAGGGGC', 0.9745688330920909), RNAStructure('GCCCCAAAAAAGGGGC', 0.9745692982930593), RNAStructure('GCCCCGAAAAAGGGGC', 0.9758500630343186), RNAStructure('GGGGCAAAAAAGCCCC', 0.9745543077208556), RNAStructure('GGAGCGAAGAAGCUCC', 0.9756107700034071)]
  mfe samples: ['GGGUGCAAGACCACCC', 'GGGGCAAAGAAGCUUC', 'GGGGCAGAACAGCCCC', 'GGUGCAGAAAAGUGCC', 'GCCCCAAAAGAGGGGC']
@@ -81,39 +87,51 @@ dist_best: (0, 'GCCCCAAAAGAGGGGC')
 full results are saved in the file: results_20250718161920_1975123.json  # results_{timestamp}_{random_id}.json
 ```
 
-### Batch mode (input file with one structure per line)
-``python main.py --t 1 --k 10 --object pd --path data/eterna/eterna100.txt  # add --batch_size 50 --worker_count 20 for multiprocessing speedups``
+### Batch mode (input a file with one structure per line)
+
+```bash
+python main.py --t 1 --k 10 --object pd --path data/eterna/eterna100.txt  # add --batch_size 50 --worker_count 20 for multiprocessing speedups
+```
 
 ### Replicate reported results (5 repeats)
-``python main.py --t 1 --k 10 --object pd --path data/eterna/eterna100.txt --repeat 5  # add --batch_size 50 --worker_count 20 for multiprocessing speedups``
+
+```bash
+python main.py --t 1 --k 10 --object pd --path data/eterna/eterna100.txt --repeat 5  # add --batch_size 50 --worker_count 20 for multiprocessing speedups
+```
 
 ### Design options
-- `--online`: Enable online mode (read a single structure from stdin).
-- `--t`: Sampling temperature T. Higher T increases randomness; lower T is greedier. Default: 1.
-- `--k`: Frontier (priority queue) size. Larger values explore more candidates per iteration at higher cost. Default: 10.
-- `--object`: Optimization objective: `pd` (probability defect) or `ned` (normalized ensemble defect). Default: `pd`.
-- `--init`: Sequence initialization method: `cg` (constraint-guided/targeted) or `all` (uniform random). Default: `cg`.
-- `--nosm`: Disable structured mutation (ablates structure-aware grouped changes).
-- `--nomfe`: Disable “MFE as product”; only the single best-scoring sequence is kept as the designed output.
-- `--step`: Maximum number of iterations. Default: 5000.
-- `--repeat`: Number of repeated runs (batch mode only). Default: 1.
-- `--start`: Starting index for naming output files (batch mode only). Default: 0.
-- `--batch_size`: Number of structures processed concurrently in batch mode.
-- `--worker_count`: Number of CPU workers for batch mode; must be ≤ `batch_size`.
+
+| Option | Description |
+| --- | --- |
+| `--online` | Enable online mode (read a single structure from stdin). |
+| `--t` | Sampling temperature T. Higher T increases randomness; lower T is greedier. Default: `1`. |
+| `--k` | Frontier (priority queue) size. Larger values explore more candidates per iteration at higher cost. Default: `10`. |
+| `--object` | Optimization objective: `pd` (probability defect) or `ned` (normalized ensemble defect). Default: `pd`. |
+| `--init` | Sequence initialization method: `cg` (constraint-guided/targeted) or `all` (uniform random). Default: `cg`. |
+| `--nosm` | Disable structured mutation (ablates structure-aware grouped changes). |
+| `--nomfe` | Disable "MFE as product"; only the single best-scoring sequence is kept as the designed output. |
+| `--step` | Maximum number of iterations. Default: `5000`. |
+| `--repeat` | Number of repeated runs (batch mode only). Default: `1`. |
+| `--start` | Starting index for naming output files (batch mode only). Default: `0`. |
+| `--batch_size` | Number of structures processed concurrently in batch mode. |
+| `--worker_count` | Number of CPU workers for batch mode; must be ≤ `--batch_size`. |
 
 ### Batch mode output format
-The design results will be output as a csv file with the following columns.
 
-- ``structure``: the input puzzle (target secondary structure). 
-- ``objective``: the best (lowest) objective value achived during optimization. 
-- ``rna``: the sequence with the best objective during optimization. 
-- ``mfe``: the MFE structure of ``rna``, given by ViennaRNA folding engine. 
-- ``dist``: the distance between ``mfe`` and ``structure``. 
-- ``mfe_list``: a list containing all the MFE solutions found. The order of the list is based on the time when each MFE solution is detected. 
-- ``umfe_list``: a list containing all the uMFE solutions found. The order of the list is based on the time when each uMFE solution is detected.
-- ``k_best``: the priority queue at the final iteration.
-- ``ned_best``: the best ned value and the corresponding sequence.
-- ``prob_best``: the best probability value and the corresponding sequence.
-- ``dist_best``: the best distance value and the corresponding sequence.
-- ``log``: the objective values at each iteration.
-- ``time``: the total time used to design the input puzzle ``structure``.
+The design results are written to a CSV file with the following columns:
+
+| Column | Description |
+| --- | --- |
+| `structure` | The input puzzle (target secondary structure). |
+| `objective` | The best (lowest) objective value achieved during optimization. |
+| `rna` | The sequence with the best objective during optimization. |
+| `mfe` | The MFE structure of `rna`, given by the ViennaRNA folding engine. |
+| `dist` | The distance between `mfe` and `structure`. |
+| `mfe_list` | A list of all the MFE solutions found, ordered by the time each was detected. |
+| `umfe_list` | A list of all the uMFE solutions found, ordered by the time each was detected. |
+| `k_best` | The priority queue at the final iteration. |
+| `ned_best` | The best NED value and the corresponding sequence. |
+| `prob_best` | The best probability value and the corresponding sequence. |
+| `dist_best` | The best distance value and the corresponding sequence. |
+| `log` | The objective values at each iteration. |
+| `time` | The total time used to design the input `structure`. |

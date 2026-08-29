@@ -1,11 +1,11 @@
-"""This script reads multiple CSV files output from SAMFEO,
+r"""This script reads multiple CSV files output from SAMFEO,
 counts the number of solved puzzles / structures by MFE and uMFE (unique Minimum Free Energy) criteria,
 and prints various statistics about the solutions.
 Example usage:
 python metrics.py --path "samfeo_output*.csv" --mfe
 or python metrics.py --path samfeo_output\*.csv --mfe
 
-find best distance for each puzzle, along with the corresponding sequence and MFE structure.
+Find the best distance for each puzzle, along with the corresponding sequence and MFE structure.
 Example usage:
 python metrics.py --path "samfeo_output*.csv" --dist
 or python metrics.py --path samfeo_output\*.csv --dist
@@ -57,8 +57,8 @@ def count_mfe(df_list):
             continue
         if filtered_structures and structure in filtered_structures:
             continue
-        count_soved_by_mfe = 0
-        count_soved_by_umfe = 0
+        count_solved_by_mfe = 0
+        count_solved_by_umfe = 0
         objective_list = []
         dist_best_list = []
         ned_best_list = []
@@ -67,10 +67,10 @@ def count_mfe(df_list):
             mfe_list = eval(df_one.mfe_list.iloc[i])
             umfe_list = eval(df_one.umfe_list.iloc[i])
             if mfe_list:
-                count_soved_by_mfe += 1
+                count_solved_by_mfe += 1
                 matrix_mfe[i, j] = 1
             if umfe_list:
-                count_soved_by_umfe += 1
+                count_solved_by_umfe += 1
                 matrix_umfe[i, j] = 1
             objective_list.append((df_one.objective.iloc[i]))
             dist_best_list.append(eval(df_one.dist_best.iloc[i]))
@@ -87,10 +87,10 @@ def count_mfe(df_list):
                 structure,
                 min(objective_list),
                 np.mean(objective_list),
-                count_soved_by_mfe,
-                count_soved_by_umfe,
-                count_soved_by_mfe > 0,
-                count_soved_by_umfe > 0,
+                count_solved_by_mfe,
+                count_solved_by_umfe,
+                count_solved_by_mfe > 0,
+                count_solved_by_umfe > 0,
                 dist_best,
                 ned_best,
                 time_mean,
@@ -143,9 +143,8 @@ def count_mfe(df_list):
 
     print("Objective statistics:")
     print("-------------------------------------")
-    print(f"objective arithmic mean: {df_joint.objective.mean():.4f}")
-    print(f"1 - obj.  arithmic mean: {1 - df_joint.objective.mean():.4f}")
-    # print(f"objective arithmic std: {df_joint.objective.std():.4f}")
+    print(f"objective arithmetic mean: {df_joint.objective.mean():.4f}")
+    print(f"1 - obj.  arithmetic mean: {1 - df_joint.objective.mean():.4f}")
     print()
 
     objective_list = df_joint.objective
@@ -205,11 +204,10 @@ def find_best_distance(df_list):
             obj_best_list.append(obj_best)
         obj_best = min(obj_best_list)
         dist_best = min(dist_best_list)
-        dist, _ = dist_best 
+        dist, _ = dist_best
         _, x = obj_best
         if dist >= 0:
             y_mfe, d_best = argmin_dist(x, structure)
-            # assert d_best == dist, f"Distance mismatch: {d_best} != {dist}"
             assert d_best >= dist, f"Distance mismatch: {d_best} < {dist}"
             data.append([i, structure, d_best, dist, x, y_mfe])
         else:
@@ -236,7 +234,12 @@ if __name__ == "__main__":
     parser.add_argument("--path", type=str, default="")
     parser.add_argument("--dist", action="store_true", help="get best distance")
     parser.add_argument("--mfe", action="store_true", help="get mfe statistics")
-    parser.add_argument("--path_filter", type=str, default="", help="path to a txt file containing structures to be filtered out")
+    parser.add_argument(
+        "--path_filter",
+        type=str,
+        default="",
+        help="path to a txt file containing structures to be filtered out",
+    )
 
     args = parser.parse_args()
     print(f"args: {args}")

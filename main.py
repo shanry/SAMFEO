@@ -1,4 +1,3 @@
-import os
 import sys
 import time
 from datetime import datetime
@@ -13,7 +12,7 @@ import numpy as np
 import pandas as pd
 
 from utils.vienna import position_ed_pd_mfe, position_ed_ned_mfe, mfe
-from utils.structure import extract_pairs, struct_dist
+from utils.structure import pairs_match, struct_dist
 from utils.constants import P1, P2, U1, U2
 
 multiprocessing.set_start_method("fork")
@@ -39,7 +38,6 @@ nuc_pair_all = ["AU", "UA", "CG", "GC", "UG", "GU"]
 
 STAY = 2000
 STOP = 0.01
-# EPSILON = 1e-40
 EPSILON_r = 1e-4
 MAX_REPEAT = 1000
 FREQ_PRINT = 10
@@ -92,7 +90,7 @@ def init_with_pair(t, pos_pairs, pairs_init):
         if s == ".":
             rna[i] = "A"
             if name_pair == "all":
-                rna[i] = np.random.choice(["A", "C", "G", "U"])
+                rna[i] = np.random.choice(nuc_all)
         elif s == "(":
             j = pos_pairs[i]
             pair = np.random.choice(pairs_init)
@@ -107,7 +105,7 @@ def init_with_pair(t, pos_pairs, pairs_init):
     return "".join(rna)
 
 
-# targeted initilization
+# targeted initialization
 def init_k(target, pos_pairs, k):
     print(f"name_pair: {name_pair}")
     pair_pool = name2pair[name_pair]
@@ -123,27 +121,6 @@ def init_k(target, pos_pairs, k):
         if init_i not in p_list:
             p_list.append(init_i)
     return p_list
-
-
-def pairs_match(ss):  # find the pairs in a secondary structure, return a dictionary
-    assert len(ss) > 5
-    pairs = dict()
-    stack = []
-    for i, s in enumerate(ss):
-        if s == ".":
-            pass
-        elif s == "(":
-            stack.append(i)
-        elif s == ")":
-            j = stack.pop()
-            assert j < i
-            pairs[j] = i
-            pairs[i] = j
-        else:
-            raise ValueError(
-                f"the value of structure at position: {i} is not right: {s}!"
-            )
-    return pairs
 
 
 def mutate_pair(nuc_i, nuc_j, exclude=False):
@@ -255,12 +232,11 @@ def samfeo(target, steps, k, t=1, check_mfe=True, sm=True, freq_print=FREQ_PRINT
         f"steps: {steps}, t: {t}, k: {k}, structured mutation: {sm}, objective name: {objective_name}"
     )
 
-    # targeted initilization
+    # targeted initialization
     pairs = pairs_match(target)
     initial_list = init_k(target, pairs, k)
     history = set()
     k_best = []
-    # best_many = []
     log = []
     dist_list = []  # deprecated
     mfe_list = []
@@ -278,7 +254,9 @@ def samfeo(target, steps, k, t=1, check_mfe=True, sm=True, freq_print=FREQ_PRINT
             objective_value = ned - 1
         elif objective_name == "probability_defect":
             objective_value = negative_prob  # tricky: objective is negative probability instead of 1 - probability to avoid float underflow
-        rna_struct = RNAStructure(seq=sequence, score=-objective_value, defect_list=defect_list) # take negative objective as score because the greater the socre, the better the design quality
+        rna_struct = RNAStructure(
+            seq=sequence, score=-objective_value, defect_list=defect_list
+        )  # take negative objective as score: the greater the score, the better the design quality
         rna_struct.dist = min(
             [struct_dist(target, y_mfe) for y_mfe in y_mfe_list]
         )  # ss: secondary structure
@@ -308,7 +286,7 @@ def samfeo(target, steps, k, t=1, check_mfe=True, sm=True, freq_print=FREQ_PRINT
         if dist_best[1] is None or rna_struct.dist <= dist_best[0]:
             dist_best = (rna_struct.dist, rna_struct.seq)
 
-    # log of lowest objective value at eachs iterations
+    # log of lowest objective value at each iteration
     v_min = min(log)
     iter_min = 0
     log_min = [v_min]
@@ -362,8 +340,6 @@ def samfeo(target, steps, k, t=1, check_mfe=True, sm=True, freq_print=FREQ_PRINT
                 if len(y_mfe_list) == 1:
                     umfe = True
                     umfe_list.append(seq_next)
-        # else:
-        #     dist = len(target)  # set a dummy dist
         if not umfe:
             dist_list.append(dist)
         else:
@@ -413,13 +389,12 @@ def samfeo(target, steps, k, t=1, check_mfe=True, sm=True, freq_print=FREQ_PRINT
                     f"iter: {i+1: 5d}\t value: {v_min: .4e}\t best iter: {iter_min} improve: {improve:.4e}"
                 )
 
-        # stop if convergency condition is satisfied
+        # stop if convergence condition is satisfied
         if v_min < STOP - 1.0 or (len(log_min) > STAY and v_min - log_min[-STAY] > abs(EPSILON_r * v_min)):
             break
     ned_best = (float(ned_best[0]), ned_best[1])
     end_time = time.time()  # Record the end time
     elapsed_time = end_time - start_time  # Calculate the elapsed time
-    # best_many = sorted(best_many, key=lambda x: x.prob, reverse=True)[: args.k2]
     return k_best, log, mfe_list, umfe_list, dist_best, ned_best, prob_best, elapsed_time
 
 
@@ -472,11 +447,9 @@ def design(path_txt, name, func, num_step, k, t, check_mfe, sm):
         puzzle_name = f"{name}_{i}"
         print(f"target structure {i}, {puzzle_name}:")
         print(target)
-        start_time = time.time()
         k_best, log, mfe_list, umfe_list, dist_best, ned_best, prob_best, elapsed_time = samfeo(
             target, num_step, k=k, t=t, check_mfe=check_mfe, sm=sm
         )  # rna and ensemble defect
-        finish_time = time.time()
         rna_best = max(k_best)
         seq = rna_best.seq
         obj = None
@@ -529,7 +502,6 @@ def design(path_txt, name, func, num_step, k, t, check_mfe, sm):
                     dist_best,
                 ]
             )
-        # data.append([puzzle_name, target, seq, obj, ss_mfe, dist, finish_time-start_time, log, k_best, mfe_list, umfe_list, ned_best])
         df = pd.DataFrame(data, columns=cols)
         df.to_csv(filename)
 
@@ -543,7 +515,6 @@ def design_para(path_txt, name, num_step, k, t, check_mfe, sm):
         for line in f:
             targets.append(line.strip())
     data = []
-    # cols = ('puzzle_name', 'structure', 'rna', 'objective', 'mfe', 'dist', 'time', 'k_best', 'ned_best')
     if LOG:
         cols = (
             "puzzle_name",
@@ -597,8 +568,6 @@ def design_para(path_txt, name, num_step, k, t, check_mfe, sm):
             print(f"target structure {idx_puzzle}, {puzzle_name}:")
             print(target)
             k_best, log, mfe_list, umfe_list, dist_best, ned_best, prob_best, elapsed_time = result
-            # k_best, log, mfe_list, umfe_list, dist_best, ned_best, prob_best, elapsed_time
-
             rna_best = max(k_best)
             seq = rna_best.seq
             objective_value = 1 - rna_best.score
@@ -655,8 +624,9 @@ def design_para(path_txt, name, num_step, k, t, check_mfe, sm):
 def test_design():
     # Prepare minimal global args/objective configuration when imported under pytest
     from types import SimpleNamespace
-    global args, objective_name, f_obj, name_pair
-    if 'args' not in globals():
+
+    global args, objective_name, name_pair, seed_np, STAY
+    if "args" not in globals():
         args = SimpleNamespace(
             object="pd",
             k=10,
@@ -667,9 +637,8 @@ def test_design():
             init="cg",
             log=False,
             step=100,
-            start=0
+            start=0,
         )
-        global name_pair, stop, seed_np, STAY
         STAY = args.stay
         name_pair = args.init
         seed_np = 2020 + args.start * 2021
@@ -699,12 +668,10 @@ def test_design():
 
 
 if __name__ == "__main__":
-
     parser = argparse.ArgumentParser()
     parser.add_argument("--path", "-p", type=str, default="")
     parser.add_argument("--object", "-o", type=str, default="pd")
     parser.add_argument("--k", type=int, default=10)
-    # parser.add_argument("--k2", type=int, default=10)  # size of best_many
     parser.add_argument("--t", type=float, default=1)
     parser.add_argument("--step", type=int, default=5000)
     parser.add_argument("--stay", type=int, default=2000)
@@ -716,14 +683,12 @@ if __name__ == "__main__":
     parser.add_argument("--nosm", action="store_true")
     parser.add_argument("--log", action="store_true")
     parser.add_argument("--online", action="store_true")
-    # parser.add_argument("--para", action="store_true")
     parser.add_argument("--worker_count", type=int, default=1)
     parser.add_argument("--batch_size", type=int, default=1)
 
     args = parser.parse_args()
     print("args:")
     print(args)
-    global name_pair, stop, seed_np, objective_name
     STAY = args.stay
     name_pair = args.init
     name_input = args.path.split("/")[-1].split(".")[0]
@@ -732,15 +697,13 @@ if __name__ == "__main__":
     elif args.object == "pd":  # probability defect
         objective_name = "probability_defect"
     else:
-        raise ValueError("the objective in not correct!")
+        raise ValueError("the objective is not correct!")
     LOG = args.log
     if args.online:
-        # seed_np = 2020
         seed_np = 2020 + args.start * 2021
         for line in sys.stdin:
             target = line.strip()
             print(target)
-            start_time = time.time()
             k_best, log, mfe_list, umfe_list, dist_best, ned_best, prob_best, elapsed_time = (
                 samfeo(
                     target,
@@ -751,7 +714,6 @@ if __name__ == "__main__":
                     sm=not args.nosm,
                 )
             )  # rna and ensemble defect
-            finish_time = time.time()
             rna_best = max(k_best)
             best_dist = max(dist_best[0], 0)  # -2 represent unique MFE, set to 0 for reporting the real distance
             dist_best = (best_dist, dist_best[1])
@@ -765,7 +727,7 @@ if __name__ == "__main__":
             dist = struct_dist(target, ss_mfe)
             print(ss_mfe)
             print(f"structure distance: {dist}")
-            print(f"count of mfe solutsion: {len(mfe_list)}")
+            print(f"count of mfe solutions: {len(mfe_list)}")
             print(f"count of umfe solutions: {len(umfe_list)}")
             print(k_best)
             kbest_list = []
@@ -785,7 +747,7 @@ if __name__ == "__main__":
                 "ned_best": ned_best,
                 "prob_best": prob_best,
                 "dist_best": dist_best,
-                "time": elapsed_time
+                "time": elapsed_time,
             }
             timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
             id_random = random.randint(0, int(1e7))
@@ -802,7 +764,7 @@ if __name__ == "__main__":
             suffix = f"{i+args.start}"
             BATCH_SIZE = args.batch_size
             WORKER_COUNT = args.worker_count
-            assert WORKER_COUNT <= BATCH_SIZE, "worker_count should be less than batch_size!"
+            assert WORKER_COUNT <= BATCH_SIZE, "worker_count should be less than or equal to batch_size!"
             design_para(
                 args.path,
                 name_input,
